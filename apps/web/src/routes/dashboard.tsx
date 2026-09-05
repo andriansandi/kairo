@@ -1,6 +1,8 @@
+import { createRoute } from '@tanstack/react-router';
+import { rootRoute } from './layout';
 import { useHealth } from '../api/health';
 
-export default function Dashboard() {
+function Dashboard() {
   const { data, isLoading, error } = useHealth();
 
   const indicatorColor = isLoading
@@ -71,3 +73,9 @@ export default function Dashboard() {
     </div>
   );
 }
+
+export const dashboardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/',
+  component: Dashboard,
+});

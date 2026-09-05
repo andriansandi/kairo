@@ -4,3 +4,10 @@ export interface Env {
   ENV: "dev" | "staging" | "prod";
   VERSION: string;
 }
+
+declare module "hono" {
+  interface ContextVariableMap {
+    env: Env;
+    db: D1Database;
+  }
+}

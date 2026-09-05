@@ -606,3 +606,42 @@ export type PlanningInput = z.infer<typeof PlanningInputSchema>;
 // ----------------------------------------------------------------------------
 
 export { z };
+
+// ----------------------------------------------------------------------------
+// Phase 1 foundation additions (append-only)
+// ----------------------------------------------------------------------------
+
+export const ApiErrorEnvelopeSchema = z.object({
+  error: z.object({
+    code: z.string(),
+    message: z.string(),
+    details: z.unknown().optional(),
+  }),
+});
+export type ApiErrorEnvelope = z.infer<typeof ApiErrorEnvelopeSchema>;
+
+export function PaginatedSchema<T extends z.ZodTypeAny>(itemSchema: T) {
+  return z.object({
+    items: z.array(itemSchema),
+    nextCursor: z.string().nullable(),
+  });
+}
+export type Paginated<T> = {
+  items: T[];
+  nextCursor: string | null;
+};
+
+export const SyncRunStatusSchema = z.enum([
+  "running",
+  "success",
+  "partial",
+  "failed",
+]);
+export type SyncRunStatus = z.infer<typeof SyncRunStatusSchema>;
+
+export const TimelineImportStatusSchema = z.enum([
+  "draft",
+  "confirmed",
+  "rejected",
+]);
+export type TimelineImportStatus = z.infer<typeof TimelineImportStatusSchema>;

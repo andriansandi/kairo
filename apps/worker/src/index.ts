@@ -1,32 +1,44 @@
 import { Hono } from "hono";
-import { EnvironmentSchema, HealthResponseSchema } from "@kairo/types";
 import type { Env } from "./env";
 import { validateAccessJwt } from "./middleware/access";
+import { HTTPException } from "./http";
+import { healthzRouter } from "./routes/healthz";
+import { peopleRouter } from "./routes/people";
+import { teamsRouter } from "./routes/teams";
+import { rolesRouter } from "./routes/roles";
+import { skillsRouter } from "./routes/skills";
+import { allocationsRouter } from "./routes/allocations";
+import { dependenciesRouter } from "./routes/dependencies";
+import { planeRouter } from "./routes/plane";
+import { projectsRouter } from "./routes/projects";
+import { workItemsRouter } from "./routes/work-items";
+import { importsRouter } from "./routes/imports";
+import { snapshotsRouter } from "./routes/snapshots";
+import { handleScheduled } from "./services/scheduled";
 
 export function createApp(env: Env): Hono {
   const app = new Hono();
 
+  app.use("/api/*", async (c, next) => {
+    c.set("env", env);
+    c.set("db", env.DB);
+    await next();
+  });
+
   app.use("/api/*", validateAccessJwt);
 
-  app.get("/api/v1/healthz", async (c) => {
-    let db: "ok" | "error" = "ok";
-    try {
-      await env.DB.prepare("SELECT 1 as ok").first();
-    } catch {
-      db = "error";
-    }
-
-    const body = {
-      status: "ok" as const,
-      version: env.VERSION,
-      env: EnvironmentSchema.parse(env.ENV),
-      timestamp: new Date().toISOString(),
-      db,
-    };
-
-    HealthResponseSchema.parse(body);
-    return c.json(body);
-  });
+  app.route("/api/v1/healthz", healthzRouter);
+  app.route("/api/v1/people", peopleRouter);
+  app.route("/api/v1/teams", teamsRouter);
+  app.route("/api/v1/roles", rolesRouter);
+  app.route("/api/v1/skills", skillsRouter);
+  app.route("/api/v1/allocations", allocationsRouter);
+  app.route("/api/v1/dependencies", dependenciesRouter);
+  app.route("/api/v1/plane", planeRouter);
+  app.route("/api/v1/projects", projectsRouter);
+  app.route("/api/v1/work-items", workItemsRouter);
+  app.route("/api/v1/imports", importsRouter);
+  app.route("/api/v1/snapshots", snapshotsRouter);
 
   app.notFound((c) => {
     if (c.req.path.startsWith("/api")) {
@@ -36,13 +48,25 @@ export function createApp(env: Env): Hono {
       );
     }
 
-    // Static assets are served by the Wrangler assets binding. Anything reaching
-    // here is genuinely not found; return a minimal 404 so the app falls through.
     return c.text("Not found", 404);
   });
 
   app.onError((err, c) => {
-    const message = err instanceof Error ? err.message : "Internal server error";
+    if (err instanceof HTTPException) {
+      return c.json(
+        {
+          error: {
+            code: err.code,
+            message: err.message,
+            details: err.details,
+          },
+        },
+        err.status as any,
+      );
+    }
+
+    const message =
+      err instanceof Error ? err.message : "Internal server error";
     return c.json({ error: { code: "internal_error", message } }, 500);
   });
 
@@ -52,5 +76,12 @@ export function createApp(env: Env): Hono {
 export default {
   fetch(request: Request, env: Env) {
     return createApp(env).fetch(request);
+  },
+  async scheduled(
+    _event: { cron: string; scheduledTime: number },
+    env: Env,
+    _ctx: { waitUntil(promise: Promise<unknown>): void },
+  ) {
+    await handleScheduled(env);
   },
 };
