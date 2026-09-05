@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createRoute, Link, Outlet, useParams } from '@tanstack/react-router';
-import type { Project, ProjectPhase, ProjectStatus } from '@kairo/types';
+import type { Project, ProjectPhase, ProjectStatus, ScenarioOp } from '@kairo/types';
 import { rootRoute } from './layout';
 import {
   Badge,
@@ -24,6 +24,13 @@ import {
   useUpdateProject,
   type ProjectFilters,
 } from '../api/projects';
+import {
+  useFeasibility,
+  useGenerateAlternatives,
+  type FeasibilityResult,
+  type Alternative,
+  type AlternativeStrategy,
+} from '../api/feasibility';
 
 const statusOptions: ProjectStatus[] = ['draft', 'active', 'paused', 'completed', 'cancelled'];
 const limit = 25;
@@ -58,6 +65,56 @@ function phaseStatusTone(status: ProjectPhase['status']) {
 
 function formatDate(value: string | null) {
   return value ?? '—';
+}
+
+function feasibilityBadgeTone(verdict: string | null): 'success' | 'warning' | 'danger' | 'neutral' {
+  switch (verdict) {
+    case 'healthy':
+      return 'success';
+    case 'warning':
+    case 'at_risk':
+      return 'warning';
+    case 'critical':
+      return 'danger';
+    default:
+      return 'neutral';
+  }
+}
+
+function feasibilityLabel(verdict: string | null): string {
+  return verdict ? verdict.replace('_', ' ') : 'Unknown';
+}
+
+function strategyLabel(strategy: AlternativeStrategy): string {
+  switch (strategy) {
+    case 'level_resources':
+      return 'Level resources';
+    case 'borrow_resources':
+      return 'Borrow resources';
+    case 'extend_deadline':
+      return 'Extend deadline';
+    case 'reduce_scope':
+      return 'Reduce scope';
+  }
+}
+
+function opHumanLine(op: ScenarioOp): string {
+  switch (op.op) {
+    case 'move_project':
+      return `Move project by ${op.weeks} week(s)`;
+    case 'set_deadline':
+      return `Set deadline to ${op.date}`;
+    case 'add_allocation':
+      return `Add ${op.person_id} at ${op.fte} FTE from ${op.start_date} to ${op.end_date}`;
+    case 'remove_allocation':
+      return `Remove allocation ${op.allocation_id}`;
+    case 'change_allocation_fte':
+      return `Change allocation ${op.allocation_id} to ${op.fte} FTE`;
+    case 'defer_work_items':
+      return `Defer ${op.work_item_ids.length} work item(s)`;
+    case 'add_person_skill':
+      return `Add skill ${op.skill_id} at level ${op.level} to person ${op.person_id}`;
+  }
 }
 
 function ProjectsPage() {
@@ -128,6 +185,7 @@ function ProjectsPage() {
                 <TH>Code</TH>
                 <TH>Name</TH>
                 <TH>Status</TH>
+                <TH>Health</TH>
                 <TH>Priority</TH>
                 <TH>Deadline</TH>
                 <TH>JRs</TH>
@@ -148,6 +206,11 @@ function ProjectsPage() {
                   <TD>{p.name}</TD>
                   <TD>
                     <Badge tone={projectStatusTone(p.status)}>{p.status.replace('_', ' ')}</Badge>
+                  </TD>
+                  <TD>
+                    <Badge tone={feasibilityBadgeTone(p.feasibility_verdict)}>
+                      {feasibilityLabel(p.feasibility_verdict)}
+                    </Badge>
                   </TD>
                   <TD>{p.priority ?? '—'}</TD>
                   <TD>{formatDate(p.deadline)}</TD>
@@ -250,6 +313,8 @@ function ProjectDetail() {
     );
   };
 
+  const [tab, setTab] = useState<'overview' | 'feasibility'>('overview');
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -262,153 +327,416 @@ function ProjectDetail() {
         </Link>
       </div>
 
-      <Card>
-        <div className="mb-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <div>
-            <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Code</dt>
-            <dd className="mt-1 text-sm font-semibold text-slate-900">{project.code}</dd>
-          </div>
-          <div>
-            <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Status</dt>
-            <dd className="mt-1">
-              <Badge tone={projectStatusTone(project.status)}>
-                {project.status.replace('_', ' ')}
-              </Badge>
-            </dd>
-          </div>
-          <div>
-            <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Plane ID</dt>
-            <dd className="mt-1 text-sm text-slate-700">{project.plane_id ?? '—'}</dd>
-          </div>
-          <div>
-            <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Updated</dt>
-            <dd className="mt-1 text-sm text-slate-700">
-              {new Date(project.updated_at).toLocaleString()}
-            </dd>
-          </div>
-        </div>
+      <div className="border-b border-slate-200">
+        <nav className="-mb-px flex gap-6">
+          <TabButton active={tab === 'overview'} onClick={() => setTab('overview')}>
+            Overview
+          </TabButton>
+          <TabButton active={tab === 'feasibility'} onClick={() => setTab('feasibility')}>
+            Feasibility
+          </TabButton>
+        </nav>
+      </div>
 
-        <div className="grid grid-cols-1 gap-4 border-t border-slate-200 pt-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div>
-            <label htmlFor="priority" className="mb-1 block text-xs font-medium text-slate-600">
-              Priority (1–5)
-            </label>
-            <Input
-              id="priority"
-              type="number"
-              min={1}
-              max={5}
-              value={draft.priority ?? ''}
-              onChange={(e) =>
-                setDraft((d) => ({
-                  ...d,
-                  priority: e.target.value === '' ? null : Number(e.target.value),
-                }))
-              }
-            />
-          </div>
-          <div>
-            <label htmlFor="deadline" className="mb-1 block text-xs font-medium text-slate-600">
-              Deadline
-            </label>
-            <Input
-              id="deadline"
-              type="date"
-              value={draft.deadline ?? ''}
-              onChange={(e) =>
-                setDraft((d) => ({ ...d, deadline: e.target.value || null }))
-              }
-            />
-          </div>
-          <div>
-            <label htmlFor="declared-start" className="mb-1 block text-xs font-medium text-slate-600">
-              Declared start
-            </label>
-            <Input
-              id="declared-start"
-              type="date"
-              value={draft.declared_start ?? ''}
-              onChange={(e) =>
-                setDraft((d) => ({ ...d, declared_start: e.target.value || null }))
-              }
-            />
-          </div>
-          <div>
-            <label htmlFor="declared-end" className="mb-1 block text-xs font-medium text-slate-600">
-              Declared end
-            </label>
-            <Input
-              id="declared-end"
-              type="date"
-              value={draft.declared_end ?? ''}
-              onChange={(e) =>
-                setDraft((d) => ({ ...d, declared_end: e.target.value || null }))
-              }
-            />
-          </div>
-        </div>
+      {tab === 'overview' ? (
+        <>
+          <Card>
+            <div className="mb-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+              <div>
+                <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Code</dt>
+                <dd className="mt-1 text-sm font-semibold text-slate-900">{project.code}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Status</dt>
+                <dd className="mt-1">
+                  <Badge tone={projectStatusTone(project.status)}>
+                    {project.status.replace('_', ' ')}
+                  </Badge>
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Plane ID</dt>
+                <dd className="mt-1 text-sm text-slate-700">{project.plane_id ?? '—'}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Updated</dt>
+                <dd className="mt-1 text-sm text-slate-700">
+                  {new Date(project.updated_at).toLocaleString()}
+                </dd>
+              </div>
+            </div>
 
-        <div className="mt-4 flex items-center gap-3">
-          <Button onClick={handleSave} disabled={!changed || update.isPending}>
-            {update.isPending ? <Spinner className="mr-2 h-4 w-4" /> : null}
-            Save
-          </Button>
-          {update.isError && (
-            <span className="text-sm text-red-700">{update.error.message}</span>
+            <div className="grid grid-cols-1 gap-4 border-t border-slate-200 pt-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div>
+                <label htmlFor="priority" className="mb-1 block text-xs font-medium text-slate-600">
+                  Priority (1–5)
+                </label>
+                <Input
+                  id="priority"
+                  type="number"
+                  min={1}
+                  max={5}
+                  value={draft.priority ?? ''}
+                  onChange={(e) =>
+                    setDraft((d) => ({
+                      ...d,
+                      priority: e.target.value === '' ? null : Number(e.target.value),
+                    }))
+                  }
+                />
+              </div>
+              <div>
+                <label htmlFor="deadline" className="mb-1 block text-xs font-medium text-slate-600">
+                  Deadline
+                </label>
+                <Input
+                  id="deadline"
+                  type="date"
+                  value={draft.deadline ?? ''}
+                  onChange={(e) =>
+                    setDraft((d) => ({ ...d, deadline: e.target.value || null }))
+                  }
+                />
+              </div>
+              <div>
+                <label htmlFor="declared-start" className="mb-1 block text-xs font-medium text-slate-600">
+                  Declared start
+                </label>
+                <Input
+                  id="declared-start"
+                  type="date"
+                  value={draft.declared_start ?? ''}
+                  onChange={(e) =>
+                    setDraft((d) => ({ ...d, declared_start: e.target.value || null }))
+                  }
+                />
+              </div>
+              <div>
+                <label htmlFor="declared-end" className="mb-1 block text-xs font-medium text-slate-600">
+                  Declared end
+                </label>
+                <Input
+                  id="declared-end"
+                  type="date"
+                  value={draft.declared_end ?? ''}
+                  onChange={(e) =>
+                    setDraft((d) => ({ ...d, declared_end: e.target.value || null }))
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="mt-4 flex items-center gap-3">
+              <Button onClick={handleSave} disabled={!changed || update.isPending}>
+                {update.isPending ? <Spinner className="mr-2 h-4 w-4" /> : null}
+                Save
+              </Button>
+              {update.isError && (
+                <span className="text-sm text-red-700">{update.error.message}</span>
+              )}
+              {update.isSuccess && <span className="text-sm text-emerald-700">Saved</span>}
+            </div>
+          </Card>
+
+          {phases.length > 0 && (
+            <Card>
+              <h3 className="mb-3 text-sm font-semibold text-slate-900">Phases</h3>
+              <Table>
+                <THead>
+                  <TR>
+                    <TH>Sequence</TH>
+                    <TH>Name</TH>
+                    <TH>Status</TH>
+                    <TH>Start</TH>
+                    <TH>End</TH>
+                    <TH>Effort (h)</TH>
+                  </TR>
+                </THead>
+                <tbody className="divide-y divide-slate-200">
+                  {phases.map((phase) => (
+                    <TR key={phase.id}>
+                      <TD>{phase.sequence}</TD>
+                      <TD>{phase.name}</TD>
+                      <TD>
+                        <Badge tone={phaseStatusTone(phase.status)}>
+                          {phase.status.replace('_', ' ')}
+                        </Badge>
+                      </TD>
+                      <TD>{formatDate(phase.declared_start)}</TD>
+                      <TD>{formatDate(phase.declared_end)}</TD>
+                      <TD>{phase.effort_hours}</TD>
+                    </TR>
+                  ))}
+                </tbody>
+              </Table>
+            </Card>
           )}
-          {update.isSuccess && <span className="text-sm text-emerald-700">Saved</span>}
+
+          {Object.keys(counts).length > 0 && (
+            <Card>
+              <h3 className="mb-3 text-sm font-semibold text-slate-900">Counts</h3>
+              <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                {Object.entries(counts).map(([key, value]) => (
+                  <div key={key}>
+                    <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                      {key.replace(/_/g, ' ')}
+                  </dt>
+                    <dd className="mt-1 text-sm font-semibold text-slate-900">{String(value)}</dd>
+                  </div>
+                ))}
+              </dl>
+            </Card>
+          )}
+        </>
+      ) : (
+        <FeasibilitySection project={project} />
+      )}
+    </div>
+  );
+}
+
+function TabButton({
+  active,
+  children,
+  onClick,
+}: {
+  active: boolean;
+  children: React.ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`border-b-2 px-1 py-2 text-sm font-medium transition ${
+        active
+          ? 'border-slate-900 text-slate-900'
+          : 'border-transparent text-slate-500 hover:text-slate-700'
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function FeasibilitySection({ project }: { project: Project }) {
+  const { projectId } = useParams({ from: '/projects/$projectId' });
+  const {
+    data,
+    isLoading: feasibilityLoading,
+    error: feasibilityError,
+    refetch,
+  } = useFeasibility(projectId);
+  const generate = useGenerateAlternatives(projectId);
+  const [alternatives, setAlternatives] = useState<Alternative[] | null>(null);
+
+  const feasibility = data?.feasibility;
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-slate-900">Feasibility</h3>
+          {feasibility && (
+            <Badge tone={feasibilityBadgeTone(feasibility.verdict)}>
+              {feasibilityLabel(feasibility.verdict)}
+            </Badge>
+          )}
         </div>
+
+        {feasibilityLoading ? (
+          <div className="flex items-center gap-2 py-4 text-slate-500">
+            <Spinner />
+            <span>Loading feasibility…</span>
+          </div>
+        ) : feasibilityError ? (
+          <ErrorState title="Failed to load feasibility" message={feasibilityError.message} retry={refetch} />
+        ) : !feasibility ? (
+          <EmptyState title="No feasibility data" message="Run a snapshot rebuild to compute feasibility." />
+        ) : (
+          <div className="space-y-6">
+            <TimelineStrip
+              declaredStart={project.declared_start}
+              declaredEnd={project.declared_end}
+              deadline={project.deadline}
+              computedFinish={feasibility.computed_finish}
+            />
+
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              <div>
+                <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Computed start</dt>
+                <dd className="mt-1 text-sm font-semibold text-slate-900">{formatDate(feasibility.computed_start)}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Computed finish</dt>
+                <dd className="mt-1 text-sm font-semibold text-slate-900">{formatDate(feasibility.computed_finish)}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Slack days</dt>
+                <dd className="mt-1 text-sm font-semibold text-slate-900">{feasibility.slack_days}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Buffer days</dt>
+                <dd className="mt-1 text-sm font-semibold text-slate-900">{feasibility.buffer_days}</dd>
+              </div>
+            </div>
+
+            {feasibility.drivers.length > 0 && (
+              <div>
+                <h4 className="mb-2 text-sm font-semibold text-slate-900">Drivers</h4>
+                <ul className="list-disc space-y-1 pl-5 text-sm text-slate-700">
+                  {feasibility.drivers.map((driver, i) => (
+                    <li key={i}>{driver}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {Object.keys(feasibility.per_phase_load).length > 0 && (
+              <div>
+                <h4 className="mb-2 text-sm font-semibold text-slate-900">Per-phase load</h4>
+                <Table>
+                  <THead>
+                    <TR>
+                      <TH>Phase</TH>
+                      <TH>Load (h/wk)</TH>
+                    </TR>
+                  </THead>
+                  <tbody className="divide-y divide-slate-200">
+                    {Object.entries(feasibility.per_phase_load).map(([phase, load]) => (
+                      <TR key={phase}>
+                        <TD>{phase}</TD>
+                        <TD>{Number(load.toFixed(1))}</TD>
+                      </TR>
+                    ))}
+                  </tbody>
+                </Table>
+              </div>
+            )}
+          </div>
+        )}
       </Card>
 
-      {phases.length > 0 && (
-        <Card>
-          <h3 className="mb-3 text-sm font-semibold text-slate-900">Phases</h3>
-          <Table>
-            <THead>
-              <TR>
-                <TH>Sequence</TH>
-                <TH>Name</TH>
-                <TH>Status</TH>
-                <TH>Start</TH>
-                <TH>End</TH>
-                <TH>Effort (h)</TH>
-              </TR>
-            </THead>
-            <tbody className="divide-y divide-slate-200">
-              {phases.map((phase) => (
-                <TR key={phase.id}>
-                  <TD>{phase.sequence}</TD>
-                  <TD>{phase.name}</TD>
-                  <TD>
-                    <Badge tone={phaseStatusTone(phase.status)}>
-                      {phase.status.replace('_', ' ')}
-                    </Badge>
-                  </TD>
-                  <TD>{formatDate(phase.declared_start)}</TD>
-                  <TD>{formatDate(phase.declared_end)}</TD>
-                  <TD>{phase.effort_hours}</TD>
-                </TR>
-              ))}
-            </tbody>
-          </Table>
-        </Card>
-      )}
+      <Card>
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-slate-900">Alternatives</h3>
+          <Button
+            onClick={() =>
+              generate.mutate(undefined, {
+                onSuccess: (res) => setAlternatives(res.alternatives),
+              })
+            }
+            disabled={generate.isPending}
+          >
+            {generate.isPending ? (
+              <>
+                <Spinner className="mr-2 h-4 w-4" /> Generating…
+              </>
+            ) : (
+              'Generate alternatives'
+            )}
+          </Button>
+        </div>
 
-      {Object.keys(counts).length > 0 && (
-        <Card>
-          <h3 className="mb-3 text-sm font-semibold text-slate-900">Counts</h3>
-          <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            {Object.entries(counts).map(([key, value]) => (
-              <div key={key}>
-                <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                  {key.replace(/_/g, ' ')}
-                </dt>
-                <dd className="mt-1 text-sm font-semibold text-slate-900">{String(value)}</dd>
+        {generate.error && (
+          <div className="mb-4 rounded border border-red-200 bg-red-50 p-3">
+            <p className="text-sm text-red-700">{generate.error.message}</p>
+          </div>
+        )}
+
+        <p className="mb-4 text-sm text-slate-600">
+          Applying an alternative is a human decision — use the Scenarios page.
+        </p>
+
+        {alternatives === null ? (
+          <EmptyState title="No alternatives generated" message="Click the button to compute candidate plans." />
+        ) : alternatives.length === 0 ? (
+          <EmptyState title="No alternatives" message="The current plan has no suggested alternatives." />
+        ) : (
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {alternatives.map((alt) => (
+              <div key={alt.id} className="rounded border border-slate-200 p-4">
+                <div className="mb-2 flex items-center justify-between">
+                  <h4 className="font-semibold text-slate-900">{strategyLabel(alt.strategy)}</h4>
+                  <Badge tone="neutral">{alt.id}</Badge>
+                </div>
+                <p className="mb-3 text-sm text-slate-700">{alt.description}</p>
+
+                {alt.tradeoffs.length > 0 && (
+                  <div className="mb-3 flex flex-wrap gap-2">
+                    {alt.tradeoffs.map((tradeoff, i) => (
+                      <span
+                        key={i}
+                        className="inline-flex items-center rounded bg-slate-100 px-2 py-1 text-xs text-slate-700"
+                      >
+                        {tradeoff}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {alt.ops.length > 0 && (
+                  <div>
+                    <h5 className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Changes</h5>
+                    <ul className="list-disc space-y-1 pl-5 text-sm text-slate-700">
+                      {alt.ops.map((op, i) => (
+                        <li key={i}>{opHumanLine(op)}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             ))}
-          </dl>
-        </Card>
-      )}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+function TimelineStrip({
+  declaredStart,
+  declaredEnd,
+  deadline,
+  computedFinish,
+}: {
+  declaredStart: string | null;
+  declaredEnd: string | null;
+  deadline: string | null;
+  computedFinish: string;
+}) {
+  const markers = [
+    { label: 'Declared start', date: declaredStart, color: 'bg-slate-500' },
+    { label: 'Declared end', date: declaredEnd, color: 'bg-slate-400' },
+    { label: 'Computed finish', date: computedFinish, color: 'bg-indigo-500' },
+    { label: 'Deadline', date: deadline, color: 'bg-rose-500' },
+  ].filter((m): m is { label: string; date: string; color: string } => !!m.date);
+
+  const dates = markers.map((m) => new Date(m.date).getTime());
+  const min = dates.length ? Math.min(...dates) : 0;
+  const max = dates.length ? Math.max(...dates) : 0;
+  const span = max - min || 1;
+
+  if (markers.length === 0) {
+    return <p className="text-sm text-slate-500">No timeline dates available.</p>;
+  }
+
+  return (
+    <div className="relative h-20 w-full">
+      <div className="absolute top-1/2 left-0 right-0 h-0.5 -translate-y-1/2 bg-slate-300" />
+      {markers.map((m, i) => {
+        const pos = ((new Date(m.date).getTime() - min) / span) * 100;
+        return (
+          <div
+            key={i}
+            className="absolute top-0 -translate-x-1/2"
+            style={{ left: `${pos}%` }}
+          >
+            <div className={`mx-auto h-3 w-3 rounded-full ${m.color}`} />
+            <div className="mt-1 text-center text-xs text-slate-600 whitespace-nowrap">{m.label}</div>
+            <div className="text-center text-[10px] text-slate-500">{m.date}</div>
+          </div>
+        );
+      })}
     </div>
   );
 }

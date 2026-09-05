@@ -1,6 +1,14 @@
 import { Hono } from "hono";
 import { all, first, newId, nowIso, run } from "../db";
 import { badRequest, notFound, parseBody, parseQuery } from "../http";
+import { computeSkillCoverage, type SkillCoverage } from "@kairo/matching-engine";
+import {
+  ensureCurrentSnapshot,
+  mapCapacityEntryRow,
+  mapPersonRowToEngine,
+  mapPersonSkillRowToEngine,
+  mapSkillRowToEngine,
+} from "../services/snapshot";
 import {
   CreateSkillSchema,
   mapSkillRow,
@@ -25,6 +33,36 @@ skillsRouter.get("/", async (c) => {
   sql += " ORDER BY name";
   const rows = await all<Record<string, unknown>>(db, sql, ...params);
   return c.json(rows.map(mapSkillRow));
+});
+
+skillsRouter.get("/coverage", async (c) => {
+  const db = c.get("db") as D1Database;
+  const { snapshot } = await ensureCurrentSnapshot(db);
+
+  const [skillRows, personRows, personSkillRows, ledgerRows] = await Promise.all([
+    all<Record<string, unknown>>(db, "SELECT * FROM skill"),
+    all<Record<string, unknown>>(db, "SELECT * FROM person"),
+    all<Record<string, unknown>>(db, "SELECT * FROM person_skill"),
+    all<Record<string, unknown>>(
+      db,
+      "SELECT * FROM capacity_entry WHERE snapshot_id = ?",
+      snapshot.id,
+    ),
+  ]);
+
+  const skills = skillRows.map(mapSkillRowToEngine);
+  const people = personRows.map(mapPersonRowToEngine);
+  const personSkills = personSkillRows.map(mapPersonSkillRowToEngine);
+  const ledger = ledgerRows.map(mapCapacityEntryRow);
+
+  const coverage: SkillCoverage[] = computeSkillCoverage({
+    skills,
+    people,
+    personSkills,
+    ledger,
+  });
+
+  return c.json({ coverage });
 });
 
 skillsRouter.post("/", async (c) => {

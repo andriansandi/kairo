@@ -9,11 +9,16 @@ import type {
   ProjectPhase,
   CapacityWeekEntry,
   PlanningSnapshot,
+  Skill,
+  PersonSkill,
+  JrSkillRequirement,
+  WorkItem,
+  Dependency,
+  FeasibilityResult as PersistedFeasibilityResult,
 } from "@kairo/types";
 import {
   buildCapacityLedger,
   rollupTeamCapacity,
-  rollupProjectDemand,
   MAX_UTILIZATION_SENTINEL,
   type TeamWeekEntry,
   type ProjectWeekEntry,
@@ -21,13 +26,23 @@ import {
 import {
   evaluateConflicts,
   type EngineConflict,
+  type ConflictEngineInput,
+  type ConflictThresholds,
   DEFAULT_CONFLICT_THRESHOLDS,
 } from "@kairo/conflict-engine";
+import {
+  computeFeasibility,
+  generateAlternatives,
+  type FeasibilityResult,
+  type FeasibilityInput,
+  type Alternative,
+} from "@kairo/planning-engine";
 import { weekStart, isoWeekKey } from "@kairo/calendar";
 import { all, first, newId, nowIso, run, fromJson } from "../db";
 
 export { MAX_UTILIZATION_SENTINEL, DEFAULT_CONFLICT_THRESHOLDS };
 export type { TeamWeekEntry, ProjectWeekEntry, EngineConflict };
+export type { FeasibilityResult, FeasibilityInput, Alternative };
 
 export const SNAPSHOT_SOURCE_TABLES = [
   "project",
@@ -298,6 +313,98 @@ export function mapCapacityEntryRow(row: unknown): CapacityWeekEntry {
   };
 }
 
+export function mapSkillRowToEngine(row: unknown): Skill {
+  const r = row as Record<string, unknown>;
+  return {
+    id: r.id as string,
+    name: r.name as string,
+    category: (r.category as string) ?? "",
+    aliases: fromJson(r.aliases, []) as string[],
+  };
+}
+
+export function mapPersonSkillRowToEngine(row: unknown): PersonSkill {
+  const r = row as Record<string, unknown>;
+  return {
+    id: r.id as string,
+    person_id: r.person_id as string,
+    skill_id: r.skill_id as string,
+    level: Number(r.level) as PersonSkill["level"],
+    verified_by: (r.verified_by as string | null) ?? null,
+    source: (r.source as PersonSkill["source"]) ?? "manual",
+  };
+}
+
+export function mapJrSkillRequirementRowToEngine(
+  row: unknown,
+): JrSkillRequirement {
+  const r = row as Record<string, unknown>;
+  return {
+    id: r.id as string,
+    work_item_id: r.work_item_id as string,
+    skill_id: r.skill_id as string,
+    min_level: Number(r.min_level) as JrSkillRequirement["min_level"],
+    weight: (r.weight as JrSkillRequirement["weight"]) ?? "must",
+    source: (r.source as JrSkillRequirement["source"]) ?? "manual",
+  };
+}
+
+export function mapWorkItemRowToEngine(row: unknown): WorkItem {
+  const r = row as Record<string, unknown>;
+  return {
+    id: r.id as string,
+    project_id: r.project_id as string,
+    plane_id: (r.plane_id as string) ?? "",
+    title: r.title as string,
+    status: (r.status as WorkItem["status"]) ?? "backlog",
+    priority: r.priority == null ? null : Number(r.priority),
+    assignee_ids: fromJson(r.assignee_ids, []) as string[],
+    start_date: (r.start_date as string | null) ?? null,
+    due_date: (r.due_date as string | null) ?? null,
+    estimate_raw: (r.estimate_raw as string | null) ?? null,
+    estimate_normalized_hours:
+      r.estimate_normalized_hours == null
+        ? null
+        : Number(r.estimate_normalized_hours),
+    cycle: (r.cycle as string | null) ?? null,
+    labels: fromJson(r.labels, []) as string[],
+    updated_at: (r.updated_at as string) ?? nowIso(),
+  };
+}
+
+export function mapDependencyRowToEngine(row: unknown): Dependency {
+  const r = row as Record<string, unknown>;
+  return {
+    id: r.id as string,
+    from_project_id: (r.from_project_id as string | null) ?? null,
+    from_phase_id: (r.from_phase_id as string | null) ?? null,
+    to_project_id: (r.to_project_id as string | null) ?? null,
+    to_phase_id: (r.to_phase_id as string | null) ?? null,
+    type: (r.type as Dependency["type"]) ?? "FS",
+    lag_days: Number(r.lag_days ?? 0),
+    source: (r.source as Dependency["source"]) ?? "manual",
+  };
+}
+
+export function mapFeasibilityResultRow(
+  row: unknown,
+): PersistedFeasibilityResult {
+  const r = row as Record<string, unknown>;
+  return {
+    id: r.id as string,
+    snapshot_id: r.snapshot_id as string,
+    project_id: r.project_id as string,
+    computed_start: r.computed_start as string,
+    computed_finish: r.computed_finish as string,
+    slack_days: Number(r.slack_days ?? 0),
+    buffer_days: Number(r.buffer_days ?? 0),
+    verdict: r.verdict as PersistedFeasibilityResult["verdict"],
+    drivers: fromJson(r.drivers, []) as string[],
+    critical_path: fromJson(r.critical_path, []) as string[],
+    per_phase_load: fromJson(r.per_phase_load, {}) as Record<string, number>,
+  };
+}
+
 export async function loadOrgCalendar(db: D1Database): Promise<OrgCalendar> {
   const row = await first<Record<string, unknown>>(
     db,
@@ -306,8 +413,160 @@ export async function loadOrgCalendar(db: D1Database): Promise<OrgCalendar> {
   return parseOrgCalendarRow(row);
 }
 
+export function buildFeasibilityInput(params: {
+  project: Project;
+  phases: ProjectPhase[];
+  allocations: Allocation[];
+  people: Person[];
+  dependencies: Dependency[];
+  calendar: OrgCalendar;
+  bufferTargetPct?: number;
+}): FeasibilityInput {
+  return {
+    project: params.project,
+    phases: params.phases,
+    allocations: params.allocations,
+    people: params.people,
+    dependencies: params.dependencies,
+    calendar: params.calendar,
+    bufferTargetPct: params.bufferTargetPct,
+    now: todayIso(),
+  };
+}
+
+export function toFeasibilityResultPersistence(
+  snapshotId: string,
+  result: FeasibilityResult,
+): {
+  id: string;
+  snapshot_id: string;
+  project_id: string;
+  computed_start: string;
+  computed_finish: string;
+  slack_days: number;
+  buffer_days: number;
+  verdict: FeasibilityResult["verdict"];
+  drivers: string;
+  critical_path: string;
+  per_phase_load: string;
+} {
+  const slackDays = result.slack_days ?? 0;
+  const drivers =
+    result.slack_days === null
+      ? [...result.drivers, "no deadline set"]
+      : result.drivers;
+  const perPhaseLoad = Object.fromEntries(
+    result.per_phase.map((p) => [p.phase_id, p.staffed_fte]),
+  );
+  return {
+    id: newId(),
+    snapshot_id: snapshotId,
+    project_id: result.project_id,
+    computed_start: result.computed_start,
+    computed_finish: result.computed_finish,
+    slack_days: slackDays,
+    buffer_days: result.buffer_days,
+    verdict: result.verdict,
+    drivers: JSON.stringify(drivers),
+    critical_path: JSON.stringify(result.critical_path),
+    per_phase_load: JSON.stringify(perPhaseLoad),
+  };
+}
+
+export function toFeasibilitySummary(result: FeasibilityResult): {
+  project_id: string;
+  slack_days: number;
+  buffer_days: number;
+  verdict: string;
+} {
+  return {
+    project_id: result.project_id,
+    slack_days: result.slack_days ?? 0,
+    buffer_days: result.buffer_days,
+    verdict: result.verdict,
+  };
+}
+
+export function resolveConflictThresholds(
+  value: unknown,
+  fallback = DEFAULT_CONFLICT_THRESHOLDS,
+): ConflictThresholds {
+  try {
+    const parsed =
+      typeof value === "string" && value.length > 0
+        ? JSON.parse(value)
+        : value;
+    if (!parsed || typeof parsed !== "object") return fallback;
+    const out: ConflictThresholds = { ...fallback };
+    for (const key of Object.keys(fallback) as (keyof ConflictThresholds)[]) {
+      if (typeof parsed[key] === "number") {
+        out[key] = parsed[key];
+      }
+    }
+    return out;
+  } catch {
+    return fallback;
+  }
+}
+
+export function buildConflictEngineInput(params: {
+  ledger: CapacityWeekEntry[];
+  teamWeeks: TeamWeekEntry[];
+  people: Person[];
+  teams: Team[];
+  projects: Project[];
+  phases: ProjectPhase[];
+  allocations: Allocation[];
+  calendar: OrgCalendar;
+  horizon: { from: string; to: string };
+  config?: ConflictThresholds;
+  skills?: Skill[];
+  personSkills?: PersonSkill[];
+  jrSkillRequirements?: JrSkillRequirement[];
+  workItems?: WorkItem[];
+  dependencies?: Dependency[];
+  teamMemberships?: TeamMembership[];
+  feasibilityResults?: FeasibilityResult[];
+  now?: string;
+}): ConflictEngineInput {
+  return {
+    ledger: params.ledger,
+    teamWeeks: params.teamWeeks,
+    people: params.people,
+    teams: params.teams,
+    projects: params.projects,
+    phases: params.phases,
+    allocations: params.allocations,
+    calendar: params.calendar,
+    horizon: params.horizon,
+    config: params.config,
+    skills: params.skills,
+    personSkills: params.personSkills,
+    jrSkillRequirements: params.jrSkillRequirements,
+    workItems: params.workItems,
+    dependencies: params.dependencies,
+    teamMemberships: params.teamMemberships,
+    feasibilityResults: (params.feasibilityResults ?? []).map(
+      toFeasibilitySummary,
+    ),
+    now: params.now ?? todayIso(),
+  };
+}
+
+export function personFreeHoursFromLedger(
+  ledger: CapacityWeekEntry[],
+): Record<string, number> {
+  const map = new Map<string, number>();
+  for (const row of ledger) {
+    const add = Math.max(0, row.available_h - row.planned_h);
+    map.set(row.person_id, (map.get(row.person_id) ?? 0) + add);
+  }
+  return Object.fromEntries(map);
+}
+
 export interface DerivedCounts {
   capacity_entries: number;
+  feasibility_results: number;
   conflicts: number;
   resolved: number;
 }
@@ -318,6 +577,11 @@ export async function computeAndPersistDerived(
 ): Promise<DerivedCounts> {
   await run(db, "DELETE FROM capacity_entry WHERE snapshot_id = ?", snapshotId);
   await run(db, "DELETE FROM conflict WHERE snapshot_id = ?", snapshotId);
+  await run(
+    db,
+    "DELETE FROM feasibility_result WHERE snapshot_id = ?",
+    snapshotId,
+  );
 
   const [
     personRows,
@@ -328,6 +592,12 @@ export async function computeAndPersistDerived(
     phaseRows,
     teamRows,
     membershipRows,
+    skillRows,
+    personSkillRows,
+    jrRequirementRows,
+    workItemRows,
+    dependencyRows,
+    settingRow,
   ] = await Promise.all([
     all<Record<string, unknown>>(db, "SELECT * FROM person"),
     all<Record<string, unknown>>(db, "SELECT * FROM allocation"),
@@ -337,6 +607,15 @@ export async function computeAndPersistDerived(
     all<Record<string, unknown>>(db, "SELECT * FROM phase"),
     all<Record<string, unknown>>(db, "SELECT * FROM team"),
     all<Record<string, unknown>>(db, "SELECT * FROM team_membership"),
+    all<Record<string, unknown>>(db, "SELECT * FROM skill"),
+    all<Record<string, unknown>>(db, "SELECT * FROM person_skill"),
+    all<Record<string, unknown>>(db, "SELECT * FROM jr_skill_requirement"),
+    all<Record<string, unknown>>(db, "SELECT * FROM work_item"),
+    all<Record<string, unknown>>(db, "SELECT * FROM dependency"),
+    first<{ value: string }>(
+      db,
+      "SELECT value FROM app_setting WHERE key = 'conflict_thresholds'",
+    ),
   ]);
 
   const people = personRows.map(mapPersonRowToEngine);
@@ -347,6 +626,14 @@ export async function computeAndPersistDerived(
   const phases = phaseRows.map(mapPhaseRowToEngine);
   const teams = teamRows.map(mapTeamRowToEngine);
   const memberships = membershipRows.map(mapTeamMembershipRowToEngine);
+  const skills = skillRows.map(mapSkillRowToEngine);
+  const personSkills = personSkillRows.map(mapPersonSkillRowToEngine);
+  const jrSkillRequirements = jrRequirementRows.map(
+    mapJrSkillRequirementRowToEngine,
+  );
+  const workItems = workItemRows.map(mapWorkItemRowToEngine);
+  const dependencies = dependencyRows.map(mapDependencyRowToEngine);
+  const thresholdConfig = resolveConflictThresholds(settingRow?.value);
 
   const horizon = calculatePlanningHorizon(allocations);
 
@@ -383,20 +670,76 @@ export async function computeAndPersistDerived(
     await db.batch(capacityStatements);
   }
 
+  const feasibilityResults: FeasibilityResult[] = [];
+  const feasibilityStatements: D1PreparedStatement[] = [];
+  for (const project of projects) {
+    const projectPhases = phases
+      .filter((p) => p.project_id === project.id)
+      .sort((a, b) => a.sequence - b.sequence);
+    if (projectPhases.length === 0) continue;
+
+    const result = computeFeasibility(
+      buildFeasibilityInput({
+        project,
+        phases: projectPhases,
+        allocations,
+        people,
+        dependencies,
+        calendar,
+      }),
+    );
+    feasibilityResults.push(result);
+
+    const row = toFeasibilityResultPersistence(snapshotId, result);
+    feasibilityStatements.push(
+      db
+        .prepare(
+          `INSERT INTO feasibility_result
+            (id, snapshot_id, project_id, computed_start, computed_finish, slack_days, buffer_days, verdict, drivers, critical_path, per_phase_load)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        )
+        .bind(
+          row.id,
+          row.snapshot_id,
+          row.project_id,
+          row.computed_start,
+          row.computed_finish,
+          row.slack_days,
+          row.buffer_days,
+          row.verdict,
+          row.drivers,
+          row.critical_path,
+          row.per_phase_load,
+        ),
+    );
+  }
+  if (feasibilityStatements.length > 0) {
+    await db.batch(feasibilityStatements);
+  }
+
   const teamWeeks = rollupTeamCapacity({ ledger, teams, memberships });
 
-  const conflicts = evaluateConflicts({
-    ledger,
-    teamWeeks,
-    people,
-    teams,
-    projects,
-    phases,
-    allocations,
-    calendar,
-    horizon,
-    config: DEFAULT_CONFLICT_THRESHOLDS,
-  });
+  const conflicts = evaluateConflicts(
+    buildConflictEngineInput({
+      ledger,
+      teamWeeks,
+      people,
+      teams,
+      projects,
+      phases,
+      allocations,
+      calendar,
+      horizon,
+      config: thresholdConfig,
+      skills,
+      personSkills,
+      jrSkillRequirements,
+      workItems,
+      dependencies,
+      teamMemberships: memberships,
+      feasibilityResults,
+    }),
+  );
 
   if (conflicts.length > 0) {
     const conflictStatements = conflicts.map((c) =>
@@ -459,7 +802,8 @@ export async function computeAndPersistDerived(
       const placeholders = toResolve.map(() => "?").join(", ");
       await run(
         db,
-        `UPDATE conflict SET status = 'resolved' WHERE id IN (${placeholders})`,
+        `UPDATE conflict SET status = 'resolved', updated_at = ? WHERE id IN (${placeholders})`,
+        nowIso(),
         ...toResolve.map((c) => c.id),
       );
       resolved = toResolve.length;
@@ -468,6 +812,7 @@ export async function computeAndPersistDerived(
 
   return {
     capacity_entries: ledger.length,
+    feasibility_results: feasibilityResults.length,
     conflicts: conflicts.length,
     resolved,
   };
@@ -493,10 +838,6 @@ export async function ensureCurrentSnapshot(
   let resolved = 0;
 
   if (!latest || latest.inputs_hash !== fingerprint) {
-    // A->B->A pattern: the input state may match an OLDER snapshot. inputs_hash
-    // is UNIQUE, so a fresh INSERT would violate the constraint — reuse the
-    // existing row, bump created_at so it becomes current again, and rebuild
-    // its derived rows (computeAndPersistDerived clears them for this id first).
     const existing = await first<PlanningSnapshot>(
       db,
       "SELECT * FROM planning_snapshot WHERE inputs_hash = ?",
@@ -550,10 +891,21 @@ export async function ensureCurrentSnapshot(
     "SELECT COUNT(*) AS conflicts FROM conflict WHERE snapshot_id = ?",
     snapshot.id,
   );
+  const [{ feasibility_results }] = await all<{ feasibility_results: number }>(
+    db,
+    "SELECT COUNT(*) AS feasibility_results FROM feasibility_result WHERE snapshot_id = ?",
+    snapshot.id,
+  );
 
   return {
     snapshot,
     rebuilt,
-    counts: { ...sourceCounts, capacity_entries, conflicts, resolved },
+    counts: {
+      ...sourceCounts,
+      capacity_entries,
+      feasibility_results,
+      conflicts,
+      resolved,
+    },
   };
 }

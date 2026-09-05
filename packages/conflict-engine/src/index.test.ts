@@ -13,6 +13,12 @@ import type {
   Allocation,
   OrgCalendar,
   CapacityWeekEntry,
+  Skill,
+  PersonSkill,
+  JrSkillRequirement,
+  WorkItem,
+  Dependency,
+  TeamMembership,
 } from "@kairo/types";
 import { buildCapacityLedger, TeamWeekEntry } from "@kairo/capacity-engine";
 
@@ -91,8 +97,69 @@ function phase(overrides: Partial<ProjectPhase> & { id: string; project_id: stri
   };
 }
 
-function team(id: string, name = id): Team {
-  return { id, name, type: "builder" };
+function team(id: string, name = id, type: Team["type"] = "builder"): Team {
+  return { id, name, type };
+}
+
+function teamMembership(person_id: string, team_id: string): TeamMembership {
+  return { id: `${person_id}-${team_id}`, person_id, team_id };
+}
+
+function skill(id: string, name = id): Skill {
+  return { id, name, category: "tech", aliases: [] };
+}
+
+function personSkill(person_id: string, skill_id: string, level: number): PersonSkill {
+  return { id: `${person_id}-${skill_id}`, person_id, skill_id, level: level as 1 | 2 | 3 | 4, verified_by: null, source: "manual" };
+}
+
+function jrReq(work_item_id: string, skill_id: string, min_level: number): JrSkillRequirement {
+  return { id: `${work_item_id}-${skill_id}`, work_item_id, skill_id, min_level: min_level as 1 | 2 | 3 | 4, weight: "must", source: "manual" };
+}
+
+function workItem(overrides: Partial<WorkItem> & { id: string; project_id: string }): WorkItem {
+  return {
+    id: overrides.id,
+    project_id: overrides.project_id,
+    plane_id: `${overrides.id}-plane`,
+    title: overrides.title ?? overrides.id,
+    status: "backlog",
+    priority: 1,
+    assignee_ids: [],
+    start_date: overrides.start_date ?? null,
+    due_date: overrides.due_date ?? null,
+    estimate_raw: null,
+    estimate_normalized_hours: overrides.estimate_normalized_hours ?? null,
+    cycle: null,
+    labels: [],
+    updated_at: "2026-01-01T00:00:00Z",
+  };
+}
+
+function dependency(from_project_id: string, to_project_id: string, lag_days = 0): Dependency {
+  return { id: `${from_project_id}-${to_project_id}`, from_project_id, from_phase_id: null, to_project_id, to_phase_id: null, type: "FS", lag_days, source: "manual" };
+}
+
+function ledgerRow(
+  overrides: Partial<CapacityWeekEntry> & {
+    week_key: string;
+    person_id: string;
+    available_h: number;
+    planned_h: number;
+    utilization: number;
+  },
+): CapacityWeekEntry {
+  return {
+    week_key: overrides.week_key,
+    person_id: overrides.person_id,
+    gross_h: overrides.gross_h ?? overrides.available_h,
+    pto_h: overrides.pto_h ?? 0,
+    overhead_h: overrides.overhead_h ?? 0,
+    available_h: overrides.available_h,
+    planned_h: overrides.planned_h,
+    utilization: overrides.utilization,
+    flags: overrides.flags ?? [],
+  };
 }
 
 describe("C1 person over-allocation", () => {
@@ -323,5 +390,390 @@ describe("clean input", () => {
       horizon: { from: "2026-09-07", to: "2026-09-11" },
     };
     expect(evaluateConflicts(input)).toEqual([]);
+  });
+});
+
+describe("C3 DevOps contention", () => {
+  it("fires when DevOps demand exceeds supply across >=2 projects", () => {
+    const people = [
+      person({ id: "d1", name: "Dev1" }),
+      person({ id: "d2", name: "Dev2" }),
+    ];
+    const projects = [
+      project({ id: "alpha", name: "Alpha" }),
+      project({ id: "beta", name: "Beta" }),
+    ];
+    const allocations = [
+      alloc({ id: "a1", person_id: "d1", project_id: "alpha", fte: 0.5, start_date: "2026-09-07", end_date: "2026-09-18" }),
+      alloc({ id: "a2", person_id: "d1", project_id: "beta", fte: 0.5, start_date: "2026-09-07", end_date: "2026-09-18" }),
+      alloc({ id: "a3", person_id: "d2", project_id: "alpha", fte: 0.5, start_date: "2026-09-07", end_date: "2026-09-18" }),
+      alloc({ id: "a4", person_id: "d2", project_id: "beta", fte: 0.5, start_date: "2026-09-07", end_date: "2026-09-18" }),
+    ];
+    const ledger = buildCapacityLedger({
+      people,
+      allocations,
+      ptoEntries: [],
+      calendar: cal(),
+      horizon: { from: "2026-09-07", to: "2026-09-18" },
+    }) as CapacityWeekEntry[];
+
+    const input: ConflictEngineInput = {
+      ledger,
+      teamWeeks: [],
+      people,
+      teams: [team("devops", "DevOps", "devops")],
+      projects,
+      phases: [],
+      allocations,
+      calendar: cal(),
+      horizon: { from: "2026-09-07", to: "2026-09-18" },
+      teamMemberships: [teamMembership("d1", "devops"), teamMembership("d2", "devops")],
+    };
+
+    const c3 = evaluateConflicts(input).filter((c) => c.rule === "C3");
+    expect(c3).toHaveLength(1);
+    expect(c3[0].severity).toBe("critical");
+    expect(c3[0].window_start).toBe("2026-W37");
+    expect(c3[0].window_end).toBe("2026-W38");
+    expect(c3[0].metrics.project_count).toBe(2);
+    expect(c3[0].metrics.demand_h).toBe(80);
+    expect(c3[0].metrics.available_h).toBe(64);
+    expect(c3[0].explanation).toContain("Alpha");
+    expect(c3[0].explanation).toContain("Beta");
+  });
+
+  it("does not fire when over-demand comes from a single project", () => {
+    const people = [person({ id: "d1", name: "Dev1" })];
+    const projects = [project({ id: "alpha", name: "Alpha" })];
+    const allocations = [
+      alloc({ id: "a1", person_id: "d1", project_id: "alpha", fte: 1, start_date: "2026-09-07", end_date: "2026-09-18" }),
+    ];
+    const ledger = buildCapacityLedger({
+      people,
+      allocations,
+      ptoEntries: [],
+      calendar: cal(),
+      horizon: { from: "2026-09-07", to: "2026-09-18" },
+    }) as CapacityWeekEntry[];
+
+    const input: ConflictEngineInput = {
+      ledger,
+      teamWeeks: [],
+      people,
+      teams: [team("devops", "DevOps", "devops")],
+      projects,
+      phases: [],
+      allocations,
+      calendar: cal(),
+      horizon: { from: "2026-09-07", to: "2026-09-18" },
+      teamMemberships: [teamMembership("d1", "devops")],
+    };
+
+    const c3 = evaluateConflicts(input).filter((c) => c.rule === "C3");
+    expect(c3).toHaveLength(0);
+  });
+});
+
+describe("C5 project resource overlap", () => {
+  it("warns when a person overlaps on two projects with combined FTE > 1", () => {
+    const people = [person({ id: "dana", name: "Dana" })];
+    const projects = [project({ id: "alpha", name: "Alpha" }), project({ id: "beta", name: "Beta" })];
+    const allocations = [
+      alloc({ id: "a1", person_id: "dana", project_id: "alpha", fte: 0.7, start_date: "2026-09-07", end_date: "2026-09-11" }),
+      alloc({ id: "a2", person_id: "dana", project_id: "beta", fte: 0.7, start_date: "2026-09-07", end_date: "2026-09-11" }),
+    ];
+
+    const input: ConflictEngineInput = {
+      ledger: [],
+      teamWeeks: [],
+      people,
+      teams: [],
+      projects,
+      phases: [],
+      allocations,
+      calendar: cal(),
+      horizon: { from: "2026-09-07", to: "2026-09-11" },
+    };
+
+    const c5 = evaluateConflicts(input).filter((c) => c.rule === "C5");
+    expect(c5).toHaveLength(1);
+    expect(c5[0].severity).toBe("warning");
+    expect(c5[0].metrics.combined_fte).toBe(1.4);
+    expect(c5[0].explanation).toContain("no declared dependency");
+  });
+
+  it("is suppressed by an existing project-level dependency", () => {
+    const people = [person({ id: "dana", name: "Dana" })];
+    const projects = [project({ id: "alpha", name: "Alpha" }), project({ id: "beta", name: "Beta" })];
+    const allocations = [
+      alloc({ id: "a1", person_id: "dana", project_id: "alpha", fte: 0.7, start_date: "2026-09-07", end_date: "2026-09-11" }),
+      alloc({ id: "a2", person_id: "dana", project_id: "beta", fte: 0.7, start_date: "2026-09-07", end_date: "2026-09-11" }),
+    ];
+
+    const input: ConflictEngineInput = {
+      ledger: [],
+      teamWeeks: [],
+      people,
+      teams: [],
+      projects,
+      phases: [],
+      allocations,
+      calendar: cal(),
+      horizon: { from: "2026-09-07", to: "2026-09-11" },
+      dependencies: [dependency("alpha", "beta")],
+    };
+
+    const c5 = evaluateConflicts(input).filter((c) => c.rule === "C5");
+    expect(c5).toHaveLength(0);
+  });
+});
+
+describe("C6 dependency violation", () => {
+  it("is critical when the violated successor start is in the past", () => {
+    const projects = [
+      project({ id: "alpha", name: "Alpha", declared_start: "2026-09-01", declared_end: "2026-09-18" }),
+      project({ id: "beta", name: "Beta", declared_start: "2026-09-15", declared_end: "2026-09-25" }),
+    ];
+
+    const input: ConflictEngineInput = {
+      ledger: [],
+      teamWeeks: [],
+      people: [],
+      teams: [],
+      projects,
+      phases: [],
+      allocations: [],
+      calendar: cal(),
+      horizon: { from: "2026-09-07", to: "2026-09-25" },
+      dependencies: [dependency("alpha", "beta")],
+      now: "2026-09-16",
+    };
+
+    const c6 = evaluateConflicts(input).filter((c) => c.rule === "C6");
+    expect(c6).toHaveLength(1);
+    expect(c6[0].severity).toBe("critical");
+    expect(c6[0].metrics.successor_start).toBe("2026-09-15");
+    expect(c6[0].metrics.predecessor_end).toBe("2026-09-18");
+  });
+
+  it("is at_risk when the violated successor start is still in the future", () => {
+    const projects = [
+      project({ id: "alpha", name: "Alpha", declared_start: "2026-09-01", declared_end: "2026-09-18" }),
+      project({ id: "beta", name: "Beta", declared_start: "2026-09-15", declared_end: "2026-09-25" }),
+    ];
+
+    const input: ConflictEngineInput = {
+      ledger: [],
+      teamWeeks: [],
+      people: [],
+      teams: [],
+      projects,
+      phases: [],
+      allocations: [],
+      calendar: cal(),
+      horizon: { from: "2026-09-07", to: "2026-09-25" },
+      dependencies: [dependency("alpha", "beta")],
+      now: "2026-09-10",
+    };
+
+    const c6 = evaluateConflicts(input).filter((c) => c.rule === "C6");
+    expect(c6).toHaveLength(1);
+    expect(c6[0].severity).toBe("at_risk");
+  });
+});
+
+describe("C7 skill bottleneck", () => {
+  it("is critical when qualified people have zero free capacity", () => {
+    const people = [person({ id: "dana", name: "Dana" })];
+    const projects = [project({ id: "alpha", name: "Alpha" })];
+
+    const input: ConflictEngineInput = {
+      ledger: [
+        ledgerRow({ week_key: "2026-W37", person_id: "dana", gross_h: 40, available_h: 40, planned_h: 40, utilization: 1 }),
+      ],
+      teamWeeks: [],
+      people,
+      teams: [],
+      projects,
+      phases: [],
+      allocations: [],
+      calendar: cal(),
+      horizon: { from: "2026-09-07", to: "2026-09-11" },
+      skills: [skill("node", "Node.js")],
+      personSkills: [personSkill("dana", "node", 2)],
+      workItems: [workItem({ id: "wi1", project_id: "alpha", estimate_normalized_hours: 40 })],
+      jrSkillRequirements: [jrReq("wi1", "node", 2)],
+    };
+
+    const c7 = evaluateConflicts(input).filter((c) => c.rule === "C7");
+    expect(c7).toHaveLength(1);
+    expect(c7[0].severity).toBe("critical");
+    expect(c7[0].metrics.required_h).toBe(40);
+    expect(c7[0].metrics.free_h).toBe(0);
+    expect(c7[0].metrics.qualified_people).toBe(1);
+  });
+
+  it("warns when required hours cross the 0.8 free-hour boundary", () => {
+    const people = [person({ id: "dana", name: "Dana" })];
+    const projects = [project({ id: "alpha", name: "Alpha" })];
+
+    const input: ConflictEngineInput = {
+      ledger: [
+        ledgerRow({ week_key: "2026-W37", person_id: "dana", gross_h: 125, available_h: 100, planned_h: 0, utilization: 0 }),
+      ],
+      teamWeeks: [],
+      people,
+      teams: [],
+      projects,
+      phases: [],
+      allocations: [],
+      calendar: cal(),
+      horizon: { from: "2026-09-07", to: "2026-09-11" },
+      skills: [skill("node", "Node.js")],
+      personSkills: [personSkill("dana", "node", 2)],
+      workItems: [workItem({ id: "wi1", project_id: "alpha", estimate_normalized_hours: 81 })],
+      jrSkillRequirements: [jrReq("wi1", "node", 2)],
+    };
+
+    const c7 = evaluateConflicts(input).filter((c) => c.rule === "C7");
+    expect(c7).toHaveLength(1);
+    expect(c7[0].severity).toBe("warning");
+    expect(c7[0].metrics.required_h).toBe(81);
+    expect(c7[0].metrics.free_h).toBe(100);
+  });
+
+  it("is at_risk when required hours exceed free hours", () => {
+    const people = [person({ id: "dana", name: "Dana" })];
+    const projects = [project({ id: "alpha", name: "Alpha" })];
+
+    const input: ConflictEngineInput = {
+      ledger: [
+        ledgerRow({ week_key: "2026-W37", person_id: "dana", gross_h: 100, available_h: 80, planned_h: 0, utilization: 0 }),
+      ],
+      teamWeeks: [],
+      people,
+      teams: [],
+      projects,
+      phases: [],
+      allocations: [],
+      calendar: cal(),
+      horizon: { from: "2026-09-07", to: "2026-09-11" },
+      skills: [skill("node", "Node.js")],
+      personSkills: [personSkill("dana", "node", 2)],
+      workItems: [workItem({ id: "wi1", project_id: "alpha", estimate_normalized_hours: 90 })],
+      jrSkillRequirements: [jrReq("wi1", "node", 2)],
+    };
+
+    const c7 = evaluateConflicts(input).filter((c) => c.rule === "C7");
+    expect(c7).toHaveLength(1);
+    expect(c7[0].severity).toBe("at_risk");
+  });
+});
+
+describe("C8 single point of failure", () => {
+  it("fires when the only level-3+ holder is loaded across >=2 projects", () => {
+    const people = [person({ id: "dana", name: "Dana" })];
+    const projects = [project({ id: "alpha", name: "Alpha" }), project({ id: "beta", name: "Beta" })];
+    const allocations = [
+      alloc({ id: "a1", person_id: "dana", project_id: "alpha", fte: 0.6, start_date: "2026-09-07", end_date: "2026-09-11" }),
+      alloc({ id: "a2", person_id: "dana", project_id: "beta", fte: 0.2, start_date: "2026-09-07", end_date: "2026-09-11" }),
+    ];
+
+    const input: ConflictEngineInput = {
+      ledger: [],
+      teamWeeks: [],
+      people,
+      teams: [],
+      projects,
+      phases: [],
+      allocations,
+      calendar: cal(),
+      horizon: { from: "2026-09-07", to: "2026-09-11" },
+      skills: [skill("k8s", "Kubernetes")],
+      personSkills: [personSkill("dana", "k8s", 3)],
+    };
+
+    const c8 = evaluateConflicts(input).filter((c) => c.rule === "C8");
+    expect(c8).toHaveLength(1);
+    expect(c8[0].severity).toBe("critical");
+    expect(c8[0].metrics.total_fte).toBe(0.8);
+    expect(c8[0].metrics.project_count).toBe(2);
+  });
+
+  it("does not fire when a second level-3+ holder exists", () => {
+    const people = [person({ id: "dana", name: "Dana" }), person({ id: "edo", name: "Edo" })];
+    const projects = [project({ id: "alpha", name: "Alpha" }), project({ id: "beta", name: "Beta" })];
+    const allocations = [
+      alloc({ id: "a1", person_id: "dana", project_id: "alpha", fte: 0.6, start_date: "2026-09-07", end_date: "2026-09-11" }),
+      alloc({ id: "a2", person_id: "dana", project_id: "beta", fte: 0.2, start_date: "2026-09-07", end_date: "2026-09-11" }),
+    ];
+
+    const input: ConflictEngineInput = {
+      ledger: [],
+      teamWeeks: [],
+      people,
+      teams: [],
+      projects,
+      phases: [],
+      allocations,
+      calendar: cal(),
+      horizon: { from: "2026-09-07", to: "2026-09-11" },
+      skills: [skill("k8s", "Kubernetes")],
+      personSkills: [personSkill("dana", "k8s", 3), personSkill("edo", "k8s", 3)],
+    };
+
+    const c8 = evaluateConflicts(input).filter((c) => c.rule === "C8");
+    expect(c8).toHaveLength(0);
+  });
+});
+
+describe("C9 buffer erosion", () => {
+  it("warns when project slack is just under the buffer target", () => {
+    const projects = [project({ id: "alpha", name: "Alpha" })];
+
+    const input: ConflictEngineInput = {
+      ledger: [],
+      teamWeeks: [],
+      people: [],
+      teams: [],
+      projects,
+      phases: [],
+      allocations: [],
+      calendar: cal(),
+      horizon: { from: "2026-09-07", to: "2026-09-11" },
+      feasibilityResults: [{ project_id: "alpha", slack_days: 1, buffer_days: 2, verdict: "warning" }],
+    };
+
+    const c9 = evaluateConflicts(input).filter((c) => c.rule === "C9");
+    expect(c9).toHaveLength(1);
+    expect(c9[0].severity).toBe("warning");
+    expect(c9[0].metrics.slack_days).toBe(1);
+    expect(c9[0].metrics.buffer_days).toBe(2);
+  });
+
+  it("warns when a person stays below the personal-buffer threshold for >=2 consecutive weeks", () => {
+    const people = [person({ id: "dana", name: "Dana" })];
+
+    const input: ConflictEngineInput = {
+      ledger: [
+        ledgerRow({ week_key: "2026-W37", person_id: "dana", gross_h: 40, available_h: 40, planned_h: 35, utilization: 0.88 }),
+        ledgerRow({ week_key: "2026-W38", person_id: "dana", gross_h: 40, available_h: 40, planned_h: 35, utilization: 0.88 }),
+      ],
+      teamWeeks: [],
+      people,
+      teams: [],
+      projects: [],
+      phases: [],
+      allocations: [],
+      calendar: cal(),
+      horizon: { from: "2026-09-07", to: "2026-09-18" },
+    };
+
+    const c9 = evaluateConflicts(input).filter((c) => c.rule === "C9" && c.person_id);
+    expect(c9).toHaveLength(1);
+    expect(c9[0].severity).toBe("warning");
+    expect(c9[0].window_start).toBe("2026-W37");
+    expect(c9[0].window_end).toBe("2026-W38");
+    expect(c9[0].metrics.weeks).toBe(2);
   });
 });

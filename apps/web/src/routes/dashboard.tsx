@@ -1,6 +1,8 @@
+import { useMemo } from 'react';
 import { createRoute, Link } from '@tanstack/react-router';
 import { rootRoute } from './layout';
 import { useHealth } from '../api/health';
+import { useProjects } from '../api/projects';
 import {
   Card,
   Spinner,
@@ -99,10 +101,83 @@ function Dashboard() {
         ) : null}
       </section>
 
+      <PortfolioHealthCard />
       <TopConflictsCard />
       <TeamCapacityStrip />
     </div>
   );
+}
+
+function PortfolioHealthCard() {
+  const { data, isLoading, error, refetch } = useProjects({ limit: 1000 });
+
+  const distribution = useMemo(() => {
+    const map = new Map<string, number>();
+    data?.items.forEach((p) => {
+      const verdict = p.feasibility_verdict ?? 'unknown';
+      map.set(verdict, (map.get(verdict) ?? 0) + 1);
+    });
+    return map;
+  }, [data]);
+
+  const total = data?.items.length ?? 0;
+
+  return (
+    <Card>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-slate-900">Portfolio health</h2>
+        <span className="text-sm text-slate-600">{total} project(s)</span>
+      </div>
+
+      {error ? (
+        <ErrorState title="Failed to load projects" message={error.message} retry={refetch} />
+      ) : isLoading ? (
+        <div className="flex items-center gap-2 py-4">
+          <Spinner />
+          <span className="text-slate-500">Loading projects…</span>
+        </div>
+      ) : total === 0 ? (
+        <EmptyState title="No projects" message="Add or sync projects to see portfolio health." />
+      ) : (
+        <>
+          <div className="flex h-4 overflow-hidden rounded-full">
+            {Array.from(distribution.entries()).map(([verdict, count]) => (
+              <div
+                key={verdict}
+                className={`first:rounded-l-full last:rounded-r-full ${verdictColorClass(verdict)}`}
+                style={{ width: `${(count / total) * 100}%` }}
+                title={`${verdict}: ${count}`}
+              />
+            ))}
+          </div>
+          <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-600">
+            {Array.from(distribution.entries()).map(([verdict, count]) => (
+              <div key={verdict} className="flex items-center gap-1.5">
+                <span className={`h-2.5 w-2.5 rounded-full ${verdictColorClass(verdict)}`} />
+                <span className="font-medium capitalize">{verdict.replace('_', ' ')}</span>
+                <span className="text-slate-400">({count})</span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </Card>
+  );
+}
+
+function verdictColorClass(verdict: string): string {
+  switch (verdict) {
+    case 'healthy':
+      return 'bg-emerald-500';
+    case 'warning':
+      return 'bg-amber-500';
+    case 'at_risk':
+      return 'bg-orange-500';
+    case 'critical':
+      return 'bg-red-500';
+    default:
+      return 'bg-slate-400';
+  }
 }
 
 function TopConflictsCard() {

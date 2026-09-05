@@ -17,6 +17,7 @@ import {
   TD,
 } from '../components/ui';
 import { useSkills, useCreateSkill, useUpdateSkill, type CreateSkillBody } from '../api/skills';
+import { useCoverage, type SkillCoverage } from '../api/coverage';
 import type { Skill } from '@kairo/types';
 
 export const skillsRoute = createRoute({
@@ -80,6 +81,7 @@ function Skills() {
       )}
 
       <AddSkillForm />
+      <CoverageSection />
     </div>
   );
 }
@@ -216,5 +218,67 @@ function AddSkillForm() {
         </div>
       </form>
     </Card>
+  );
+}
+
+function CoverageSection() {
+  const { data, isLoading, error, refetch } = useCoverage();
+
+  return (
+    <Card className="mt-6">
+      <h2 className="mb-4 text-lg font-semibold text-slate-900">Coverage</h2>
+      {error ? (
+        <ErrorState title="Failed to load coverage" message={error.message} retry={refetch} />
+      ) : isLoading ? (
+        <div className="flex items-center gap-2 py-4 text-slate-500">
+          <Spinner />
+          <span>Loading coverage…</span>
+        </div>
+      ) : !data || data.coverage.length === 0 ? (
+        <EmptyState title="No coverage data" message="Add people and skills to see coverage." />
+      ) : (
+        <>
+          <Table>
+            <THead>
+              <tr>
+                <TH>Skill</TH>
+                <TH className="text-center">L1 Novice</TH>
+                <TH className="text-center">L2 Intermediate</TH>
+                <TH className="text-center">L3 Advanced</TH>
+                <TH className="text-center">L4 Expert</TH>
+                <TH className="text-center">Total people</TH>
+                <TH className="text-right">Free hours</TH>
+                <TH />
+              </tr>
+            </THead>
+            <tbody className="divide-y divide-slate-200">
+              {data.coverage.map((row) => (
+                <CoverageRow key={row.skill_id} row={row} />
+              ))}
+            </tbody>
+          </Table>
+          <p className="mt-4 text-xs text-slate-500">
+            SPOF = exactly one person at Advanced+ for this skill (see Conflicts for the full C8 risk).
+          </p>
+        </>
+      )}
+    </Card>
+  );
+}
+
+function CoverageRow({ row }: { row: SkillCoverage }) {
+  return (
+    <TR>
+      <TD className="font-medium text-slate-900">{row.skill_name}</TD>
+      <TD className="text-center">{row.level_counts[0]}</TD>
+      <TD className="text-center">{row.level_counts[1]}</TD>
+      <TD className="text-center">{row.level_counts[2]}</TD>
+      <TD className="text-center">{row.level_counts[3]}</TD>
+      <TD className="text-center">{row.total_people}</TD>
+      <TD className="text-right">{row.free_hours}</TD>
+      <TD className="text-right">
+        {row.spof && <Badge tone="danger">SPOF</Badge>}
+      </TD>
+    </TR>
   );
 }

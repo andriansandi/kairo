@@ -1,6 +1,12 @@
-import { useQuery } from '@tanstack/react-query';
-import type { WorkItem } from '@kairo/types';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { JrSkillRequirement, ProficiencyLevel, SkillWeight, WorkItem } from '@kairo/types';
 import { apiFetch } from './client';
+
+export type SkillRequirementInput = {
+  skill_id: string;
+  min_level: ProficiencyLevel;
+  weight: SkillWeight;
+};
 
 export type WorkItemWithProject = WorkItem & { project_name: string };
 
@@ -33,5 +39,21 @@ export function useWorkItem(id: string | null) {
     queryKey: ['work-item', id],
     queryFn: () => apiFetch(`/api/v1/work-items/${encodeURIComponent(id!)}`),
     enabled: Boolean(id),
+  });
+}
+
+export function useUpdateSkillRequirements(workItemId: string) {
+  const queryClient = useQueryClient();
+  return useMutation<{ requirements: JrSkillRequirement[] }, Error, SkillRequirementInput[]>({
+    mutationFn: (requirements) =>
+      apiFetch<{ requirements: JrSkillRequirement[] }>(`/api/v1/work-items/${encodeURIComponent(workItemId)}/skill-requirements`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requirements }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['matches', workItemId] });
+      queryClient.invalidateQueries({ queryKey: ['work-item', workItemId] });
+    },
   });
 }

@@ -3,6 +3,25 @@ import type { ConflictRule, Paginated, WeekKey } from '@kairo/types';
 export type { ConflictRule } from '@kairo/types';
 import { apiFetch } from './client';
 
+export type AnalysisOutput = {
+  mode: 'deterministic' | 'ai';
+  summary: string;
+  details?: string[];
+};
+
+export type ExplainResponse = {
+  analysis: {
+    id: string;
+    kind: string;
+    subject_type: string;
+    subject_id: string;
+    snapshot_id: string;
+    output: AnalysisOutput;
+    cited_fact_ids: string[];
+    created_at: string;
+  };
+};
+
 export type ConflictSeverity = 'warning' | 'at_risk' | 'critical';
 export type ConflictStatus = 'open' | 'acknowledged' | 'resolved';
 
@@ -60,6 +79,21 @@ export function useAcknowledgeConflict() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['conflicts'] });
     },
+  });
+}
+
+export function useExplainConflict() {
+  return useMutation<ExplainResponse, Error, string>({
+    mutationFn: (subject_id) =>
+      apiFetch<ExplainResponse>('/api/v1/analyses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          kind: 'explain',
+          subject_type: 'conflict',
+          subject_id,
+        }),
+      }),
   });
 }
 

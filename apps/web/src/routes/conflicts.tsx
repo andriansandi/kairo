@@ -19,9 +19,11 @@ import {
   useConflicts,
   useConflict,
   useAcknowledgeConflict,
+  useExplainConflict,
   type ConflictView,
   type ConflictSeverity,
   type ConflictRule,
+  type ExplainResponse,
 } from '../api/conflicts';
 
 export const conflictsRoute = createRoute({
@@ -31,10 +33,16 @@ export const conflictsRoute = createRoute({
 });
 
 const RULES: { value: ConflictRule; label: string }[] = [
-  { value: 'C1', label: 'C1 over-allocation' },
-  { value: 'C2', label: 'C2 team over-demand' },
-  { value: 'C4', label: 'C4 deadline breach' },
-  { value: 'C10', label: 'C10 unstaffed phase' },
+  { value: 'C1', label: 'C1 Over-allocation' },
+  { value: 'C2', label: 'C2 Team over-demand' },
+  { value: 'C3', label: 'C3 DevOps contention' },
+  { value: 'C4', label: 'C4 Deadline breach' },
+  { value: 'C5', label: 'C5 Project overlap' },
+  { value: 'C6', label: 'C6 Dependency violation' },
+  { value: 'C7', label: 'C7 Skill bottleneck' },
+  { value: 'C8', label: 'C8 Single point of failure' },
+  { value: 'C9', label: 'C9 Buffer erosion' },
+  { value: 'C10', label: 'C10 Unstaffed phase' },
 ];
 
 const SEVERITIES: { value: ConflictSeverity; label: string }[] = [
@@ -216,6 +224,8 @@ export default function Conflicts() {
 function ConflictDetail({ id, onClose }: { id: string; onClose: () => void }) {
   const { data, isLoading, error, refetch } = useConflict(id);
   const acknowledge = useAcknowledgeConflict();
+  const explain = useExplainConflict();
+  const [explanation, setExplanation] = useState<ExplainResponse['analysis'] | null>(null);
 
   if (isLoading) {
     return (
@@ -253,6 +263,23 @@ function ConflictDetail({ id, onClose }: { id: string; onClose: () => void }) {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            onClick={() => {
+              explain.mutate(data!.id, {
+                onSuccess: (res) => setExplanation(res.analysis),
+              });
+            }}
+            disabled={explain.isPending}
+          >
+            {explain.isPending ? (
+              <>
+                <Spinner className="mr-2 h-4 w-4" /> Explaining…
+              </>
+            ) : (
+              'Explain'
+            )}
+          </Button>
           {data.status === 'open' && (
             <Button
               onClick={() => acknowledge.mutate(data.id)}
@@ -271,6 +298,31 @@ function ConflictDetail({ id, onClose }: { id: string; onClose: () => void }) {
         <h3 className="mb-2 text-sm font-semibold text-slate-900">Explanation</h3>
         <p className="text-sm leading-relaxed text-slate-700">{data.explanation}</p>
       </div>
+
+      {explain.error && (
+        <div className="mb-6 rounded border border-red-200 bg-red-50 p-3">
+          <p className="text-sm text-red-700">{explain.error.message}</p>
+        </div>
+      )}
+
+      {explanation && (
+        <div className="mb-6 rounded border border-slate-200 bg-slate-50 p-4">
+          <div className="mb-2 flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-slate-900">KAIRO analysis</h3>
+            <Badge tone={explanation.output.mode === 'deterministic' ? 'success' : 'neutral'}>
+              {explanation.output.mode === 'deterministic' ? 'verified data' : 'AI'}
+            </Badge>
+          </div>
+          <p className="text-sm leading-relaxed text-slate-700">{explanation.output.summary}</p>
+          {explanation.output.details && explanation.output.details.length > 0 && (
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
+              {explanation.output.details.map((detail, i) => (
+                <li key={i}>{detail}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       {Object.keys(data.metrics).length > 0 && (
         <div>

@@ -2,7 +2,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Project, ProjectPhase } from '@kairo/types';
 import { apiFetch } from './client';
 
-export type ProjectWithCount = Project & { work_item_count: number };
+export type ProjectWithCount = Project & {
+  work_item_count: number;
+  feasibility_verdict: string | null;
+};
 
 export type ProjectFilters = {
   q?: string;

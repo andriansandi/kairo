@@ -3,6 +3,27 @@ import { z } from "zod";
 import { parseBody, parseQuery, badRequest } from "../http";
 import { all, first, run } from "../db";
 import type { Project, ProjectPhase } from "@kairo/types";
+import {
+  computeFeasibility,
+  generateAlternatives,
+  type FeasibilityInput,
+  type Alternative,
+  type FeasibilityResult,
+} from "@kairo/planning-engine";
+import {
+  ensureCurrentSnapshot,
+  buildFeasibilityInput,
+  mapProjectRowToEngine,
+  mapPhaseRowToEngine,
+  mapAllocationRowToEngine,
+  mapPersonRowToEngine,
+  mapDependencyRowToEngine,
+  mapWorkItemRowToEngine,
+  parseOrgCalendarRow,
+  mapCapacityEntryRow,
+  mapFeasibilityResultRow,
+  personFreeHoursFromLedger,
+} from "../services/snapshot";
 
 const ProjectStatusSchema = z.enum([
   "draft",
@@ -58,7 +79,7 @@ projectsRouter.get("/", async (c) => {
   const conditions: string[] = ["1=1"];
   const params: unknown[] = [];
   if (q) {
-    conditions.push("(name LIKE ? OR code LIKE ?)");
+    conditions.push("(p.name LIKE ? OR p.code LIKE ?)");
     params.push(`%${q}%`, `%${q}%`);
   }
   if (status) {
@@ -66,17 +87,21 @@ projectsRouter.get("/", async (c) => {
     params.push(status);
   }
   if (decoded) {
-    conditions.push("(updated_at < ? OR (updated_at = ? AND id > ?))");
+    conditions.push("(p.updated_at < ? OR (p.updated_at = ? AND p.id > ?))");
     params.push(decoded.updatedAt, decoded.updatedAt, decoded.id);
   }
 
   const where = conditions.join(" AND ");
   const pageLimit = limit ?? 50;
   const projectRows = await all<
-    Project & { work_item_count: number }
+    Project & { work_item_count: number; feasibility_verdict: string | null }
   >(
     db,
-    `SELECT p.*, COUNT(w.id) AS work_item_count
+    `SELECT p.*, COUNT(w.id) AS work_item_count,
+       (SELECT fr.verdict
+        FROM feasibility_result fr
+        WHERE fr.snapshot_id = (SELECT id FROM planning_snapshot ORDER BY created_at DESC LIMIT 1)
+          AND fr.project_id = p.id) AS feasibility_verdict
      FROM project p
      LEFT JOIN work_item w ON w.project_id = p.id
      WHERE ${where}
@@ -89,8 +114,8 @@ projectsRouter.get("/", async (c) => {
 
   const hasMore = projectRows.length > pageLimit;
   const items = projectRows.slice(0, pageLimit).map((row) => {
-    const { work_item_count, ...project } = row;
-    return { ...project, work_item_count };
+    const { work_item_count, feasibility_verdict, ...project } = row;
+    return { ...project, work_item_count, feasibility_verdict };
   });
   const nextCursor =
     hasMore && items.length > 0
@@ -127,6 +152,103 @@ projectsRouter.get("/:id", async (c) => {
     phases,
     counts: counts ?? { work_items: 0, allocations: 0 },
   });
+});
+
+projectsRouter.get("/:id/feasibility", async (c) => {
+  const db = c.get("db");
+  const id = c.req.param("id");
+
+  const project = await first<{ id: string }>(
+    db,
+    "SELECT id FROM project WHERE id = ?",
+    id,
+  );
+  if (!project) return badRequest("Project not found");
+
+  const { snapshot } = await ensureCurrentSnapshot(db);
+
+  const row = await first<Record<string, unknown>>(
+    db,
+    "SELECT * FROM feasibility_result WHERE snapshot_id = ? AND project_id = ?",
+    snapshot.id,
+    id,
+  );
+
+  return c.json({
+    feasibility: row ? mapFeasibilityResultRow(row) : null,
+  });
+});
+
+projectsRouter.post("/:id/alternatives", async (c) => {
+  const db = c.get("db");
+  const id = c.req.param("id");
+
+  const projectRow = await first<Record<string, unknown>>(
+    db,
+    "SELECT * FROM project WHERE id = ?",
+    id,
+  );
+  if (!projectRow) return badRequest("Project not found");
+
+  const { snapshot } = await ensureCurrentSnapshot(db);
+
+  const [
+    phaseRows,
+    allocationRows,
+    personRows,
+    dependencyRows,
+    calendarRow,
+    workItemRows,
+    ledgerRows,
+  ] = await Promise.all([
+    all<Record<string, unknown>>(
+      db,
+      "SELECT * FROM phase WHERE project_id = ? ORDER BY sequence",
+      id,
+    ),
+    all<Record<string, unknown>>(db, "SELECT * FROM allocation"),
+    all<Record<string, unknown>>(db, "SELECT * FROM person"),
+    all<Record<string, unknown>>(db, "SELECT * FROM dependency"),
+    first<Record<string, unknown>>(db, "SELECT * FROM org_calendar LIMIT 1"),
+    all<Record<string, unknown>>(db, "SELECT * FROM work_item WHERE project_id = ?", id),
+    all<Record<string, unknown>>(
+      db,
+      "SELECT * FROM capacity_entry WHERE snapshot_id = ?",
+      snapshot.id,
+    ),
+  ]);
+
+  const project = mapProjectRowToEngine(projectRow);
+  const phases = phaseRows.map(mapPhaseRowToEngine);
+  const allocations = allocationRows.map(mapAllocationRowToEngine);
+  const people = personRows.map(mapPersonRowToEngine);
+  const dependencies = dependencyRows.map(mapDependencyRowToEngine);
+  const calendar = parseOrgCalendarRow(calendarRow);
+  const workItems = workItemRows.map(mapWorkItemRowToEngine);
+  const ledger = ledgerRows.map(mapCapacityEntryRow);
+
+  const feasibilityInput: FeasibilityInput = buildFeasibilityInput({
+    project,
+    phases,
+    allocations,
+    people,
+    dependencies,
+    calendar,
+  });
+
+  const feasibilityResult: FeasibilityResult = computeFeasibility(
+    feasibilityInput,
+  );
+
+  const personFreeHours = personFreeHoursFromLedger(ledger);
+  const alternatives: Alternative[] = generateAlternatives({
+    feasibility: feasibilityInput,
+    result: feasibilityResult,
+    workItems,
+    personFreeHours,
+  });
+
+  return c.json({ alternatives });
 });
 
 projectsRouter.patch("/:id", async (c) => {
