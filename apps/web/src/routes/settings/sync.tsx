@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { createRoute } from '@tanstack/react-router';
+import { toast } from 'sonner';
 import type { SyncRun, SyncRunStatus } from '@kairo/types';
 import { settingsRoute } from './layout';
 import {
@@ -77,7 +78,23 @@ function SyncNowCard() {
             <option value="full">Full</option>
           </Select>
         </div>
-        <Button onClick={() => run.mutate({ type })} disabled={run.isPending}>
+        <Button
+          onClick={() =>
+            run.mutate(
+              { type },
+              {
+                onSuccess: (data) => {
+                  const success = data.sync_run?.status === 'success';
+                  toast[success ? 'success' : 'warning'](
+                    success ? 'Sync complete' : 'Sync completed with errors',
+                  );
+                },
+                onError: (err) => toast.error(err.message),
+              },
+            )
+          }
+          disabled={run.isPending}
+        >
           {run.isPending && <Spinner className="mr-2 h-4 w-4" />}
           Run sync
         </Button>
@@ -221,7 +238,15 @@ function MappingQueue() {
           member={member}
           people={peopleData?.items ?? []}
           peopleError={peopleError}
-          onResolve={(action) => resolve.mutate({ memberId: member.id, action })}
+          onResolve={(action) =>
+            resolve.mutate(
+              { memberId: member.id, action },
+              {
+                onSuccess: () => toast.success('Mapping resolved'),
+                onError: (err) => toast.error(err.message),
+              },
+            )
+          }
           isResolving={resolve.isPending}
         />
       ))}

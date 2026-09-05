@@ -1,5 +1,12 @@
 import { useMemo } from 'react';
-import { Input, Select } from '../ui';
+import { Input } from '../ui';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/shadcn/select';
 
 export interface SearchableOption {
   value: string;
@@ -41,13 +48,17 @@ export function SearchableSelect({
         placeholder={placeholder}
         disabled={disabled}
       />
-      <Select value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled}>
-        <option value="">{filtered.length === 0 ? emptyLabel : '— select —'}</option>
-        {filtered.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
+      <Select value={value ?? ''} onValueChange={onChange} disabled={disabled}>
+        <SelectTrigger>
+          <SelectValue placeholder={filtered.length === 0 ? emptyLabel : '— select —'} />
+        </SelectTrigger>
+        <SelectContent>
+          {filtered.map((opt) => (
+            <SelectItem key={opt.value} value={opt.value}>
+              {opt.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
       </Select>
     </div>
   );

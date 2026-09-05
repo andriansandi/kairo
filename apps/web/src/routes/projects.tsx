@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createRoute, Link, Outlet, useParams } from '@tanstack/react-router';
+import { toast } from 'sonner';
 import type { Project, ProjectPhase, ProjectStatus, ScenarioOp } from '@kairo/types';
 import { rootRoute } from './layout';
 import {
@@ -308,8 +309,10 @@ function ProjectDetail() {
       { id: projectId, input: draft },
       {
         onSuccess: () => {
+          toast.success('Project saved');
           refetch();
         },
+        onError: (err) => toast.error(err.message),
       },
     );
   };
@@ -621,7 +624,11 @@ function FeasibilitySection({ project }: { project: Project }) {
           <Button
             onClick={() =>
               generate.mutate(undefined, {
-                onSuccess: (res) => setAlternatives(res.alternatives),
+                onSuccess: (res) => {
+                  toast.success('Alternatives generated');
+                  setAlternatives(res.alternatives);
+                },
+                onError: (err) => toast.error(err.message),
               })
             }
             disabled={generate.isPending}

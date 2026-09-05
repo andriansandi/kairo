@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createRoute } from '@tanstack/react-router';
+import { toast } from 'sonner';
 import type { JrSkillRequirement, ProficiencyLevel, SkillWeight, WorkItemStatus } from '@kairo/types';
 import { rootRoute } from './layout';
 import {
@@ -346,7 +347,11 @@ function SkillRequirementsCard({ workItemId }: { workItemId: string }) {
     setDraft((prev) => prev.map((r, i) => (i === index ? { ...r, ...patch } : r)));
   };
 
-  const save = () => update.mutate(draft);
+  const save = () =>
+    update.mutate(draft, {
+      onSuccess: () => toast.success('Skill requirements saved'),
+      onError: (err) => toast.error(err.message),
+    });
 
   if (isLoading) {
     return (

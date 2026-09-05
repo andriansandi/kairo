@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import type { Person, Project, Skill, WorkItem } from '@kairo/types';
 import { Badge, Button, Card, ErrorState, Input, Spinner } from '../ui';
 import { useCreateScenario, type ScenarioDiffResult } from '../../api/scenarios';
@@ -74,8 +75,10 @@ export function ScenarioBuilder({
         onSuccess: (data) => {
           setName('');
           setOps([]);
+          toast.success('Scenario created');
           onCreated?.(data.scenario.id);
         },
+        onError: (err) => toast.error(err.message),
       },
     );
   };

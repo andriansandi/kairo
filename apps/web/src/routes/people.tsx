@@ -1,6 +1,7 @@
 import { createRoute, Link, Outlet, useNavigate, useParams } from '@tanstack/react-router';
 import { rootRoute } from './layout';
 import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import {
   PageHeader,
   Card,
@@ -17,6 +18,13 @@ import {
   TR,
   TD,
 } from '../components/ui';
+import { ConfirmDialog } from '@/components/shadcn/confirm-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/shadcn/dropdown-menu';
 import type { Person, PersonSkill, Allocation, PtoEntry, ProficiencyLevel } from '@kairo/types';
 import type { PersonDetail as PersonDetailData } from '../api/people';
 import {
@@ -166,7 +174,7 @@ function People() {
                         </Badge>
                       </TD>
                       <TD className="text-right">
-                        <DeletePersonButton person={person} />
+                        <PersonRowActions person={person} />
                       </TD>
                     </TR>
                   ))
@@ -200,6 +208,67 @@ function People() {
   );
 }
 
+function PersonRowActions({ person }: { person: { id: string; name: string } }) {
+  const navigate = useNavigate();
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="secondary" className="px-2 py-1 text-xs">
+          Actions
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => navigate({ to: '/people/$personId', params: { personId: person.id } })}>
+          Edit
+        </DropdownMenuItem>
+        <DropdownMenuItem variant="destructive" asChild>
+          <DeletePersonButtonInline person={person} />
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function DeletePersonButtonInline({
+  person,
+  onDeleted,
+}: {
+  person: { id: string; name: string };
+  onDeleted?: () => void;
+}) {
+  const remove = useDeletePerson();
+  const [open, setOpen] = useState(false);
+
+  const handleConfirm = () => {
+    remove.mutate(person.id, {
+      onSuccess: () => {
+        toast.success(`${person.name} deleted`);
+        setOpen(false);
+        onDeleted?.();
+      },
+      onError: (err) => toast.error(err.message),
+    });
+  };
+
+  return (
+    <>
+      <span className="cursor-default" onClick={() => setOpen(true)}>
+        Delete
+      </span>
+      <ConfirmDialog
+        open={open}
+        onOpenChange={setOpen}
+        title={`Delete ${person.name}?`}
+        description="This permanently removes their skills, allocations, and PTO entries."
+        confirmLabel="Delete"
+        destructive
+        isLoading={remove.isPending}
+        onConfirm={handleConfirm}
+      />
+    </>
+  );
+}
+
 const initialPerson: CreatePersonBody = {
   name: '',
   email: '',
@@ -218,7 +287,11 @@ function AddPersonForm() {
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     create.mutate(form, {
-      onSuccess: () => setForm(initialPerson),
+      onSuccess: () => {
+        setForm(initialPerson);
+        toast.success('Person created');
+      },
+      onError: (err) => toast.error(err.message),
     });
   };
 
@@ -310,30 +383,11 @@ function DeletePersonButton({
   onDeleted?: () => void;
   size?: 'small' | 'default';
 }) {
-  const remove = useDeletePerson();
-
-  const handleClick = () => {
-    if (
-      window.confirm(
-        `Delete ${person.name}? This permanently removes their skills, allocations, and PTO entries.`,
-      )
-    ) {
-      remove.mutate(person.id, { onSuccess: onDeleted });
-    }
-  };
-
   return (
-    <div className="inline-flex flex-col items-end gap-1">
-      <Button
-        variant="danger"
-        onClick={handleClick}
-        disabled={remove.isPending}
-        className={size === 'small' ? 'px-2 py-1 text-xs' : ''}
-      >
-        {remove.isPending ? 'Deleting...' : 'Delete'}
-      </Button>
-      {remove.error && <span className="max-w-[12rem] text-xs text-k-danger-text">{remove.error.message}</span>}
-    </div>
+    <DeletePersonButtonInline
+      person={person}
+      onDeleted={onDeleted}
+    />
   );
 }
 
@@ -396,7 +450,13 @@ function ProfileCard({ person, teams }: { person: Person; teams: PersonDetailDat
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    update.mutate({ personId: person.id, body: form });
+    update.mutate(
+      { personId: person.id, body: form },
+      {
+        onSuccess: () => toast.success('Profile saved'),
+        onError: (err) => toast.error(err.message),
+      },
+    );
   };
 
   return (
@@ -407,7 +467,11 @@ function ProfileCard({ person, teams }: { person: Person; teams: PersonDetailDat
           <Badge tone={person.active ? 'success' : 'neutral'}>
             {person.active ? 'Active' : 'Inactive'}
           </Badge>
-          <DeletePersonButton person={person} size="default" onDeleted={() => navigate({ to: '/people' })} />
+          <DeletePersonButton
+            person={person}
+            size="default"
+            onDeleted={() => navigate({ to: '/people' })}
+          />
         </div>
       </div>
       <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -517,7 +581,13 @@ function SkillsCard({ personId, skills }: { personId: string; skills: PersonSkil
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    update.mutate({ personId, skills: rows });
+    update.mutate(
+      { personId, skills: rows },
+      {
+        onSuccess: () => toast.success('Skills saved'),
+        onError: (err) => toast.error(err.message),
+      },
+    );
   };
 
   return (
@@ -576,7 +646,16 @@ function PtoCard({ personId, pto }: { personId: string; pto: PtoEntry[] }) {
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    add.mutate({ personId, body: form }, { onSuccess: () => setForm({ start_date: '', end_date: '', type: 'pto' }) });
+    add.mutate(
+      { personId, body: form },
+      {
+        onSuccess: () => {
+          setForm({ start_date: '', end_date: '', type: 'pto' });
+          toast.success('PTO added');
+        },
+        onError: (err) => toast.error(err.message),
+      },
+    );
   };
 
   return (
@@ -591,7 +670,18 @@ function PtoCard({ personId, pto }: { personId: string; pto: PtoEntry[] }) {
               <span className="text-sm text-k-text-secondary">
                 {entry.dates.join(', ')} · <Badge tone="neutral">{entry.type}</Badge>
               </span>
-              <Button variant="danger" onClick={() => remove.mutate({ personId, ptoId: entry.id })}>
+              <Button
+                variant="danger"
+                onClick={() =>
+                  remove.mutate(
+                    { personId, ptoId: entry.id },
+                    {
+                      onSuccess: () => toast.success('PTO removed'),
+                      onError: (err) => toast.error(err.message),
+                    },
+                  )
+                }
+              >
                 Remove
               </Button>
             </li>
@@ -643,7 +733,13 @@ function AllocationsCard({ personId, allocations }: { personId: string; allocati
     e.preventDefault();
     create.mutate(
       { ...form, person_id: personId },
-      { onSuccess: () => setForm({ project_id: '', fte: 0.5, start_date: '', end_date: '', status: 'planned' }) },
+      {
+        onSuccess: () => {
+          setForm({ project_id: '', fte: 0.5, start_date: '', end_date: '', status: 'planned' });
+          toast.success('Allocation added');
+        },
+        onError: (err) => toast.error(err.message),
+      },
     );
   };
 
@@ -691,7 +787,18 @@ function AllocationsCard({ personId, allocations }: { personId: string; allocati
                     </Badge>
                   </TD>
                   <TD>
-                    <Button variant="danger" onClick={() => remove.mutate({ allocationId: a.id, personId })}>
+                    <Button
+                      variant="danger"
+                      onClick={() =>
+                        remove.mutate(
+                          { allocationId: a.id, personId },
+                          {
+                            onSuccess: () => toast.success('Allocation removed'),
+                            onError: (err) => toast.error(err.message),
+                          },
+                        )
+                      }
+                    >
                       Remove
                     </Button>
                   </TD>

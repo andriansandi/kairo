@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createRoute } from '@tanstack/react-router';
+import { toast } from 'sonner';
 import { rootRoute } from './layout';
 import {
   PageHeader,
@@ -285,6 +286,7 @@ function ConflictDetail({ id, onClose }: { id: string; onClose: () => void }) {
             onClick={() => {
               explain.mutate(data!.id, {
                 onSuccess: (res) => setExplanation(res.analysis),
+                onError: (err) => toast.error(err.message),
               });
             }}
             disabled={explain.isPending}
@@ -299,7 +301,12 @@ function ConflictDetail({ id, onClose }: { id: string; onClose: () => void }) {
           </Button>
           {data.status === 'open' && (
             <Button
-              onClick={() => acknowledge.mutate(data.id)}
+              onClick={() =>
+                acknowledge.mutate(data.id, {
+                  onSuccess: () => toast.success('Conflict acknowledged'),
+                  onError: (err) => toast.error(err.message),
+                })
+              }
               disabled={acknowledge.isPending}
             >
               {acknowledge.isPending ? 'Acknowledging...' : 'Acknowledge'}

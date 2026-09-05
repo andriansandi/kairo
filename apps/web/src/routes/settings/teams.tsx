@@ -1,4 +1,5 @@
 import { createRoute } from '@tanstack/react-router';
+import { toast } from 'sonner';
 import { settingsRoute } from './layout';
 import { useState } from 'react';
 import {
@@ -149,7 +150,16 @@ function TeamMemberManager({ teamId, memberIds }: { teamId: string; memberIds: s
 
   const addMember = () => {
     if (!selectedPersonId) return;
-    add.mutate({ teamId, personId: selectedPersonId }, { onSuccess: () => setSelectedPersonId('') });
+    add.mutate(
+      { teamId, personId: selectedPersonId },
+      {
+        onSuccess: () => {
+          toast.success('Member added');
+          setSelectedPersonId('');
+        },
+        onError: (err) => toast.error(err.message),
+      },
+    );
   };
 
   return (
@@ -168,7 +178,15 @@ function TeamMemberManager({ teamId, memberIds }: { teamId: string; memberIds: s
                 {personMap.get(id) ?? id}
               </span>
               <button
-                onClick={() => remove.mutate({ teamId, personId: id })}
+                onClick={() =>
+                  remove.mutate(
+                    { teamId, personId: id },
+                    {
+                      onSuccess: () => toast.success('Member removed'),
+                      onError: (err) => toast.error(err.message),
+                    },
+                  )
+                }
                 className="ml-2 text-xs font-medium text-k-danger-text hover:text-red-800"
               >
                 Remove
@@ -205,7 +223,13 @@ function CreateTeamForm() {
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    create.mutate(form, { onSuccess: () => setForm({ name: '', type: 'builder' }) });
+    create.mutate(form, {
+      onSuccess: () => {
+        toast.success('Team created');
+        setForm({ name: '', type: 'builder' });
+      },
+      onError: (err) => toast.error(err.message),
+    });
   };
 
   return (

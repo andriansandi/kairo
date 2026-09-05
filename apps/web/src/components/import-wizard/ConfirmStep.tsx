@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { Button, Card, ErrorState, Input, Select, Spinner, Badge } from '../ui';
 import {
   useConfirmImport,
@@ -147,7 +148,11 @@ export function ConfirmStep({ importId, rows, onClose }: ConfirmStepProps) {
     confirm.mutate(
       { id: importId, body },
       {
-        onSuccess: (data) => setDone(data),
+        onSuccess: (data) => {
+          toast.success('Import confirmed');
+          setDone(data);
+        },
+        onError: (err) => toast.error(err.message),
       },
     );
   };

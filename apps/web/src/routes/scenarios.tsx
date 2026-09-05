@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { createRoute } from '@tanstack/react-router';
+import { toast } from 'sonner';
 import type { Person, Project, Skill, WorkItem } from '@kairo/types';
 import { rootRoute } from './layout';
 import {
@@ -16,6 +17,7 @@ import {
   THead,
   TR,
 } from '../components/ui';
+import { ConfirmDialog } from '@/components/shadcn/confirm-dialog';
 import {
   useDeleteScenario,
   useRecomputeScenario,
@@ -147,7 +149,6 @@ function ScenariosList({
   onSelect,
 }: ScenariosListProps) {
   const recompute = useRecomputeScenario();
-  const remove = useDeleteScenario();
 
   if (error) {
     return <ErrorState title="Failed to load scenarios" message={error.message} retry={() => scenarios.refetch()} />;
@@ -172,16 +173,6 @@ function ScenariosList({
       />
     );
   }
-
-  const handleDelete = (id: string, name: string) => {
-    if (window.confirm(`Delete scenario "${name}"?`)) {
-      remove.mutate(id, {
-        onSuccess: () => {
-          if (selectedId === id) onSelect(null);
-        },
-      });
-    }
-  };
 
   return (
     <Table>
@@ -217,19 +208,22 @@ function ScenariosList({
                 <Button
                   variant="secondary"
                   className="px-2 py-1 text-xs"
-                  onClick={() => recompute.mutate(s.id)}
+                  onClick={() =>
+                    recompute.mutate(s.id, {
+                      onSuccess: () => toast.success('Scenario recomputed'),
+                      onError: (err) => toast.error(err.message),
+                    })
+                  }
                   disabled={recompute.isPending}
                 >
                   {recompute.isPending ? <Spinner className="h-3 w-3" /> : 'Recompute'}
                 </Button>
-                <Button
-                  variant="danger"
-                  className="px-2 py-1 text-xs"
-                  onClick={() => handleDelete(s.id, s.name)}
-                  disabled={remove.isPending}
-                >
-                  Delete
-                </Button>
+                <DeleteScenarioButton
+                  scenario={s}
+                  onDeleted={() => {
+                    if (selectedId === s.id) onSelect(null);
+                  }}
+                />
               </div>
             </TD>
           </TR>
@@ -312,6 +306,51 @@ function ScenarioDetail({ id, projects, people, skills, onClose }: ScenarioDetai
         </div>
       )}
     </Card>
+  );
+}
+
+function DeleteScenarioButton({
+  scenario,
+  onDeleted,
+}: {
+  scenario: { id: string; name: string };
+  onDeleted?: () => void;
+}) {
+  const remove = useDeleteScenario();
+  const [open, setOpen] = useState(false);
+
+  const handleConfirm = () => {
+    remove.mutate(scenario.id, {
+      onSuccess: () => {
+        toast.success(`Scenario "${scenario.name}" deleted`);
+        setOpen(false);
+        onDeleted?.();
+      },
+      onError: (err) => toast.error(err.message),
+    });
+  };
+
+  return (
+    <>
+      <Button
+        variant="danger"
+        className="px-2 py-1 text-xs"
+        onClick={() => setOpen(true)}
+        disabled={remove.isPending}
+      >
+        Delete
+      </Button>
+      <ConfirmDialog
+        open={open}
+        onOpenChange={setOpen}
+        title={`Delete scenario "${scenario.name}"?`}
+        description="This permanently removes the scenario and its diff history."
+        confirmLabel="Delete"
+        destructive
+        isLoading={remove.isPending}
+        onConfirm={handleConfirm}
+      />
+    </>
   );
 }
 

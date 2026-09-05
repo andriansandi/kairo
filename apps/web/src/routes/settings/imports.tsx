@@ -1,4 +1,5 @@
 import { createRoute } from '@tanstack/react-router';
+import { toast } from 'sonner';
 import { settingsRoute } from './layout';
 import { PageHeader, Button, Card, Badge, Table, THead, TH, TR, TD, Spinner, ErrorState, EmptyState } from '../../components/ui';
 import { useDeleteImport, useImports } from '../../api/imports';
@@ -66,7 +67,12 @@ function ImportList() {
                   <Button
                     variant="danger"
                     className="px-2 py-1 text-xs"
-                    onClick={() => deleteImport.mutate(imp.id)}
+                    onClick={() =>
+                      deleteImport.mutate(imp.id, {
+                        onSuccess: () => toast.success('Import deleted'),
+                        onError: (err) => toast.error(err.message),
+                      })
+                    }
                     disabled={deleteImport.isPending}
                   >
                     Delete

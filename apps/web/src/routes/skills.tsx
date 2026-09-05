@@ -1,4 +1,5 @@
 import { createRoute } from '@tanstack/react-router';
+import { toast } from 'sonner';
 import { rootRoute } from './layout';
 import { useState } from 'react';
 import {
@@ -99,7 +100,13 @@ function SkillRow({ skill }: { skill: Skill }) {
     e.preventDefault();
     update.mutate(
       { skillId: skill.id, body: form },
-      { onSuccess: () => setEditing(false) },
+      {
+        onSuccess: () => {
+          toast.success('Skill updated');
+          setEditing(false);
+        },
+        onError: (err) => toast.error(err.message),
+      },
     );
   };
 
@@ -175,7 +182,13 @@ function AddSkillForm() {
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    create.mutate(form, { onSuccess: () => setForm({ name: '', category: '', aliases: [] }) });
+    create.mutate(form, {
+      onSuccess: () => {
+        toast.success('Skill added');
+        setForm({ name: '', category: '', aliases: [] });
+      },
+      onError: (err) => toast.error(err.message),
+    });
   };
 
   return (

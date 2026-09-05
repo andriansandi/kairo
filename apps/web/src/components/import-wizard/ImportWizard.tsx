@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import * as XLSX from 'xlsx';
+import { toast } from 'sonner';
 import type { UploadPayload } from './UploadStep';
 import { UploadStep } from './UploadStep';
 import { MappingStep } from './MappingStep';
@@ -76,9 +77,11 @@ export function ImportWizard({ onClose }: ImportWizardProps) {
     formData.append('rows', JSON.stringify(buildResult.rows));
     createImport.mutate(formData, {
       onSuccess: (data) => {
+        toast.success('Import uploaded');
         setSubmitResult(data);
         setImportId(data.import.id);
       },
+      onError: (err) => toast.error(err.message),
     });
   };
 
