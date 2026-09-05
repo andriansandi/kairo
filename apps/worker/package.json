@@ -11,6 +11,8 @@
     "deploy": "wrangler deploy"
   },
   "dependencies": {
+    "@kairo/capacity-engine": "workspace:*",
+    "@kairo/conflict-engine": "workspace:*",
     "@kairo/plane-client": "workspace:*",
     "@kairo/types": "workspace:*",
     "@kairo/xls-import": "workspace:*",

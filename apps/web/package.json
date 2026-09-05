@@ -10,6 +10,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@kairo/capacity-engine": "workspace:*",
+    "@kairo/conflict-engine": "workspace:*",
     "@kairo/types": "workspace:*",
     "@kairo/xls-import": "workspace:*",
     "@tanstack/react-query": "^5.71.5",

@@ -8,10 +8,15 @@
   },
   "types": "./src/index.ts",
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
-    "@kairo/types": "workspace:*",
-    "@kairo/calendar": "workspace:*"
+    "@kairo/calendar": "workspace:*",
+    "@kairo/capacity-engine": "workspace:*",
+    "@kairo/types": "workspace:*"
+  },
+  "devDependencies": {
+    "vitest": "^5.0.0"
   }
 }

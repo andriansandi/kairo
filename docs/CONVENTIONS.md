@@ -101,6 +101,26 @@ Only the owning lane edits a file. `apps/worker/src/index.ts` and `apps/web/src/
 
 Every SQL `UPDATE` written by any lane MUST set `updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')` (or `nowIso()`). The snapshot fingerprint reads `COALESCE(updated_at, created_at)` per row; forgetting this makes snapshots silently stale.
 
+## Phase 2 ownership (capacity & timeline)
+
+### New / transferred files
+
+| File | Owner | Lane |
+|---|---|---|
+| `packages/capacity-engine/**` | E | Weekly capacity ledger + team/project rollups (pure) |
+| `packages/conflict-engine/**` | E | Rules C1, C2, C4, C10 + severity + templates (pure) |
+| `apps/worker/src/routes/capacity.ts` | W | Capacity reads (mounted at /api/v1/capacity) |
+| `apps/worker/src/routes/conflicts.ts` | W | Conflict inbox API (mounted at /api/v1/conflicts) |
+| `apps/worker/src/services/snapshot.ts` | W | Extended: rebuild now persists derived capacity_entry + conflict rows (transferred from orchestrator) |
+| `apps/worker/src/routes/people.ts`, `teams.ts` | W | Adds `GET /:id/capacity` subroutes (transferred from T-api for Phase 2) |
+| `apps/web/src/routes/capacity.tsx` | U | Capacity grid + pivots + heat map |
+| `apps/web/src/routes/conflicts.tsx` | U | Conflict inbox |
+| `apps/web/src/routes/dashboard.tsx` | U | Adds top-conflicts card + capacity strip (transferred from orchestrator; keep the health card) |
+| `apps/web/src/routes/people.tsx` | U | Adds person utilization strip (transferred from T-ui) |
+| `apps/web/src/api/capacity.ts`, `conflicts.ts` | U | Hooks |
+
+Lane smoke ports: W = 8793. E and U run no dev servers.
+
 ### Web routes (`apps/web/src/routes/*.tsx`)
 
 | File | Owner | Lane |

@@ -1,6 +1,7 @@
 import { Hono } from "hono";
+import { z } from "zod";
 import { all, first, newId, nowIso, run } from "../db";
-import { badRequest, notFound, parseBody } from "../http";
+import { badRequest, notFound, parseBody, parseQuery } from "../http";
 import {
   AddTeamMemberSchema,
   buildTeamWithMembers,
@@ -9,6 +10,14 @@ import {
   type TeamWithMembers,
   UpdateTeamSchema,
 } from "../schemas/teams";
+import {
+  ensureCurrentSnapshot,
+  getWeekRange,
+  mapCapacityEntryRow,
+  mapTeamMembershipRowToEngine,
+  mapTeamRowToEngine,
+} from "../services/snapshot";
+import { rollupTeamCapacity } from "@kairo/capacity-engine";
 
 async function loadTeamById(db: D1Database, id: string): Promise<TeamWithMembers | null> {
   const row = await first<Record<string, unknown>>(db, "SELECT * FROM team WHERE id = ?", id);
@@ -156,4 +165,58 @@ teamsRouter.delete("/:id/members/:personId", async (c) => {
     teamId,
   );
   return c.body(null, 204);
+});
+
+const TeamCapacityQuerySchema = z.object({
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+});
+
+teamsRouter.get("/:id/capacity", async (c) => {
+  const db = c.get("db") as D1Database;
+  const teamId = c.req.param("id");
+  const query = parseQuery(c, TeamCapacityQuerySchema as any) as {
+    from?: string;
+    to?: string;
+  };
+
+  const team = await first<{ id: string; name: string }>(
+    db,
+    "SELECT id, name FROM team WHERE id = ?",
+    teamId,
+  );
+  if (!team) notFound("Team not found");
+
+  const { snapshot } = await ensureCurrentSnapshot(db);
+  const range = getWeekRange(query.from, query.to);
+
+  const [rawRows, teamRows, membershipRows] = await Promise.all([
+    all<Record<string, unknown>>(
+      db,
+      `SELECT * FROM capacity_entry
+       WHERE snapshot_id = ? AND week_key >= ? AND week_key <= ?
+       ORDER BY week_key`,
+      snapshot.id,
+      range.fromKey,
+      range.toKey,
+    ),
+    all<Record<string, unknown>>(db, "SELECT * FROM team"),
+    all<Record<string, unknown>>(db, "SELECT * FROM team_membership"),
+  ]);
+
+  const ledger = rawRows.map(mapCapacityEntryRow);
+  const teamWeeks = rollupTeamCapacity({
+    ledger,
+    teams: teamRows.map(mapTeamRowToEngine),
+    memberships: membershipRows.map(mapTeamMembershipRowToEngine),
+  });
+
+  const entries = teamWeeks
+    .filter((t) => t.team_id === teamId)
+    .map((t) => ({ ...t, team_name: team.name }));
+
+  return c.json({
+    snapshot: { id: snapshot.id, created_at: snapshot.created_at },
+    entries,
+  });
 });

@@ -305,6 +305,7 @@ export const CapacityWeekEntrySchema = z.object({
   available_h: z.number(),
   planned_h: z.number(),
   utilization: z.number(),
+  flags: z.array(z.string()).default([]),
 });
 export type CapacityWeekEntry = z.infer<typeof CapacityWeekEntrySchema>;
 

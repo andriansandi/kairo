@@ -14,6 +14,8 @@ import { projectsRouter } from "./routes/projects";
 import { workItemsRouter } from "./routes/work-items";
 import { importsRouter } from "./routes/imports";
 import { snapshotsRouter } from "./routes/snapshots";
+import { capacityRouter } from "./routes/capacity";
+import { conflictsRouter } from "./routes/conflicts";
 import { handleScheduled } from "./services/scheduled";
 
 export function createApp(env: Env): Hono {
@@ -39,6 +41,8 @@ export function createApp(env: Env): Hono {
   app.route("/api/v1/work-items", workItemsRouter);
   app.route("/api/v1/imports", importsRouter);
   app.route("/api/v1/snapshots", snapshotsRouter);
+  app.route("/api/v1/capacity", capacityRouter);
+  app.route("/api/v1/conflicts", conflictsRouter);
 
   app.notFound((c) => {
     if (c.req.path.startsWith("/api")) {

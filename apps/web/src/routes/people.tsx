@@ -33,6 +33,15 @@ import {
 import { useRoles } from '../api/roles';
 import { useSkills } from '../api/skills';
 import { useProjects, useCreateAllocation, useDeleteAllocation } from '../api/allocations';
+import {
+  usePersonCapacity,
+  personDetailRange,
+  weekColumns,
+  shortWeekLabel,
+  formatWeekRange,
+  heatClass,
+  type CapacityWeekEntry,
+} from '../api/capacity';
 
 const LIMIT = 50;
 
@@ -323,6 +332,7 @@ function PersonDetail() {
       <SkillsCard personId={data.person.id} skills={data.skills} />
       <PtoCard personId={data.person.id} pto={data.pto} />
       <AllocationsCard personId={data.person.id} allocations={data.allocations} />
+      <UtilizationCard personId={data.person.id} />
     </div>
   );
 }
@@ -703,6 +713,79 @@ function AllocationsCard({ personId, allocations }: { personId: string; allocati
             </Button>
           </div>
         </form>
+      )}
+    </Card>
+  );
+}
+
+function UtilizationCard({ personId }: { personId: string }) {
+  const { from, to } = personDetailRange();
+  const { data, isLoading, error, refetch } = usePersonCapacity(personId, from, to);
+  const weeks = weekColumns(from, to);
+
+  const entries = useMemo(() => {
+    const map = new Map<string, CapacityWeekEntry>();
+    data?.entries.forEach((e) => map.set(e.week_key, e));
+    return map;
+  }, [data]);
+
+  return (
+    <Card>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-slate-900">Utilization</h2>
+        <span className="text-xs text-slate-500">
+          {from} → {to}
+        </span>
+      </div>
+
+      {error ? (
+        <ErrorState title="Failed to load utilization" message={error.message} retry={refetch} />
+      ) : (
+        <>
+          <div className="mb-4 flex items-center gap-1 overflow-x-auto pb-2">
+            {weeks.map((w) => {
+              const e = entries.get(w);
+              const flagged = e?.flags?.includes('no_available_capacity');
+              const value = e ? e.utilization : 0;
+              const display = e ? (flagged ? '∞' : `${Math.round(value)}%`) : '—';
+              return (
+                <div key={w} className="flex flex-col items-center gap-1">
+                  <div
+                    className={`flex h-10 w-12 items-center justify-center rounded text-xs font-medium ${
+                      e ? heatClass(value, flagged) : 'bg-slate-100 text-slate-400'
+                    }`}
+                    title={e ? formatWeekRange(w) : `${w}: no data`}
+                  >
+                    {display}
+                  </div>
+                  <span className="text-[10px] text-slate-500">{shortWeekLabel(w)}</span>
+                </div>
+              );
+            })}
+          </div>
+
+          {isLoading && (
+            <div className="mb-4 flex items-center gap-2">
+              <Spinner />
+              <span className="text-sm text-slate-500">Loading utilization...</span>
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-3 text-xs text-slate-600">
+            <span className="flex items-center gap-1">
+              <span className="inline-block h-3 w-3 rounded bg-emerald-100" /> ≤85%
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="inline-block h-3 w-3 rounded bg-amber-100" /> ≤100%
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="inline-block h-3 w-3 rounded bg-orange-100" /> ≤125%
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="inline-block h-3 w-3 rounded bg-red-100" /> &gt;125%
+            </span>
+          </div>
+        </>
       )}
     </Card>
   );

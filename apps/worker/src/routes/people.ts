@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { all, first, newId, nowIso, run } from "../db";
+import { ensureCurrentSnapshot, getWeekRange, mapCapacityEntryRow } from "../services/snapshot";
 import { badRequest, notFound, parseBody, parseQuery } from "../http";
 import { decodeCursor, nextCursor, slicePage } from "../schemas/common";
 import {
@@ -376,4 +377,50 @@ peopleRouter.delete("/:id/pto/:ptoId", async (c) => {
 
   await run(db, "DELETE FROM pto_entry WHERE id = ?", ptoId);
   return c.body(null, 204);
+});
+
+const PersonCapacityQuerySchema = z.object({
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+});
+
+peopleRouter.get("/:id/capacity", async (c) => {
+  const db = c.get("db") as D1Database;
+  const personId = c.req.param("id");
+  const query = parseQuery(c, PersonCapacityQuerySchema as any) as {
+    from?: string;
+    to?: string;
+  };
+
+  const person = await first<{ id: string; name: string }>(
+    db,
+    "SELECT id, name FROM person WHERE id = ?",
+    personId,
+  );
+  if (!person) notFound("Person not found");
+
+  const { snapshot } = await ensureCurrentSnapshot(db);
+  const range = getWeekRange(query.from, query.to);
+
+  const rows = await all<Record<string, unknown>>(
+    db,
+    `SELECT ce.*, p.name AS person_name
+     FROM capacity_entry ce
+     INNER JOIN person p ON ce.person_id = p.id
+     WHERE ce.snapshot_id = ? AND ce.person_id = ?
+       AND ce.week_key >= ? AND ce.week_key <= ?
+     ORDER BY ce.week_key`,
+    snapshot.id,
+    personId,
+    range.fromKey,
+    range.toKey,
+  );
+
+  return c.json({
+    snapshot: { id: snapshot.id, created_at: snapshot.created_at },
+    entries: rows.map((r) => ({
+      ...mapCapacityEntryRow(r),
+      person_name: r.person_name as string,
+    })),
+  });
 });
