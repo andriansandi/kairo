@@ -16,7 +16,7 @@ function ImportList() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-2 py-12 text-slate-600">
+      <div className="flex items-center gap-2 py-12 text-k-text-secondary">
         <Spinner />
         Loading imports...
       </div>
@@ -39,10 +39,10 @@ function ImportList() {
           <TH>Status</TH>
           <TH>Counts</TH>
           <TH>Uploaded by</TH>
-          <TH></TH>
+          <TH />
         </tr>
       </THead>
-      <tbody className="divide-y divide-slate-200">
+      <tbody>
         {imports.map((imp) => {
           const counts = typeof imp.row_report?.length === 'number' ? { rows: imp.row_report.length } : undefined;
           return (
@@ -55,7 +55,7 @@ function ImportList() {
               </TD>
               <TD>
                 {counts ? (
-                  <span className="text-sm text-slate-700">{counts.rows} row{counts.rows === 1 ? '' : 's'}</span>
+                  <span className="text-sm text-k-text-secondary">{counts.rows} row{counts.rows === 1 ? '' : 's'}</span>
                 ) : (
                   '—'
                 )}
@@ -65,7 +65,7 @@ function ImportList() {
                 {imp.status === 'draft' && (
                   <Button
                     variant="danger"
-                    className="py-1 px-2 text-xs"
+                    className="px-2 py-1 text-xs"
                     onClick={() => deleteImport.mutate(imp.id)}
                     disabled={deleteImport.isPending}
                   >
@@ -99,7 +99,7 @@ function ImportsPage() {
       {wizardOpen ? (
         <ImportWizard onClose={() => setWizardOpen(false)} />
       ) : (
-        <Card>
+        <Card className="p-0 overflow-hidden">
           <ImportList />
         </Card>
       )}

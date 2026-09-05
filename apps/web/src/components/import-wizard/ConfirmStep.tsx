@@ -161,28 +161,28 @@ export function ConfirmStep({ importId, rows, onClose }: ConfirmStepProps) {
   if (done) {
     return (
       <Card>
-        <div className="rounded border border-emerald-200 bg-emerald-50 p-6 text-center">
-          <h2 className="text-lg font-semibold text-emerald-900">Import confirmed</h2>
+        <div className="rounded-md border border-k-success-border bg-k-success-bg p-6 text-center">
+          <h2 className="text-base font-semibold text-k-success-text">Import confirmed</h2>
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
-            <div className="rounded bg-white p-3">
-              <div className="text-2xl font-bold text-slate-900">{done.projects_linked}</div>
-              <div className="text-xs text-slate-600">Projects linked</div>
+            <div className="rounded-md border border-k-success-border bg-k-surface p-3">
+              <div className="text-2xl font-bold text-k-text">{done.projects_linked}</div>
+              <div className="text-xs text-k-text-secondary">Projects linked</div>
             </div>
-            <div className="rounded bg-white p-3">
-              <div className="text-2xl font-bold text-slate-900">{done.projects_created}</div>
-              <div className="text-xs text-slate-600">Projects created</div>
+            <div className="rounded-md border border-k-success-border bg-k-surface p-3">
+              <div className="text-2xl font-bold text-k-text">{done.projects_created}</div>
+              <div className="text-xs text-k-text-secondary">Projects created</div>
             </div>
-            <div className="rounded bg-white p-3">
-              <div className="text-2xl font-bold text-slate-900">{done.phases_created}</div>
-              <div className="text-xs text-slate-600">Phases created</div>
+            <div className="rounded-md border border-k-success-border bg-k-surface p-3">
+              <div className="text-2xl font-bold text-k-text">{done.phases_created}</div>
+              <div className="text-xs text-k-text-secondary">Phases created</div>
             </div>
-            <div className="rounded bg-white p-3">
-              <div className="text-2xl font-bold text-slate-900">{done.allocations_created}</div>
-              <div className="text-xs text-slate-600">Allocations created</div>
+            <div className="rounded-md border border-k-success-border bg-k-surface p-3">
+              <div className="text-2xl font-bold text-k-text">{done.allocations_created}</div>
+              <div className="text-xs text-k-text-secondary">Allocations created</div>
             </div>
-            <div className="rounded bg-white p-3">
-              <div className="text-2xl font-bold text-slate-900">{done.rows_skipped}</div>
-              <div className="text-xs text-slate-600">Rows skipped</div>
+            <div className="rounded-md border border-k-success-border bg-k-surface p-3">
+              <div className="text-2xl font-bold text-k-text">{done.rows_skipped}</div>
+              <div className="text-xs text-k-text-secondary">Rows skipped</div>
             </div>
           </div>
           <Button className="mt-6" onClick={onClose}>
@@ -195,8 +195,8 @@ export function ConfirmStep({ importId, rows, onClose }: ConfirmStepProps) {
 
   return (
     <Card>
-      <h2 className="mb-1 text-lg font-semibold text-slate-900">5. Confirm mappings</h2>
-      <p className="mb-4 text-sm text-slate-600">
+      <h2 className="mb-1 text-base font-semibold text-k-text">5. Confirm mappings</h2>
+      <p className="mb-4 text-sm text-k-text-secondary">
         Match projects and people from the file to existing KAIRO records, or create new ones.
       </p>
 
@@ -208,14 +208,14 @@ export function ConfirmStep({ importId, rows, onClose }: ConfirmStepProps) {
       )}
 
       {isLoading ? (
-        <div className="flex items-center gap-2 text-sm text-slate-600">
+        <div className="flex items-center gap-2 text-sm text-k-text-secondary">
           <Spinner />
           Loading draft and reference data...
         </div>
       ) : (
         <div className="space-y-6">
           <section>
-            <h3 className="mb-2 text-sm font-semibold text-slate-900">
+            <h3 className="mb-2 text-sm font-semibold text-k-text">
               Projects <Badge tone="neutral">{distinctProjects.length}</Badge>
             </h3>
             <div className="space-y-3">
@@ -223,8 +223,8 @@ export function ConfirmStep({ importId, rows, onClose }: ConfirmStepProps) {
                 const mapping = projectMappings.find((m) => m.key === p.key);
                 if (!mapping) return null;
                 return (
-                  <div key={p.key} className="rounded border border-slate-200 p-3">
-                    <div className="mb-2 text-sm font-medium text-slate-800">
+                  <div key={p.key} className="rounded-md border border-k-border bg-k-surface p-3">
+                    <div className="mb-2 text-sm font-medium text-k-text">
                       {p.code ? `${p.code} — ` : ''}
                       {p.name}
                     </div>
@@ -274,7 +274,7 @@ export function ConfirmStep({ importId, rows, onClose }: ConfirmStepProps) {
           </section>
 
           <section>
-            <h3 className="mb-2 text-sm font-semibold text-slate-900">
+            <h3 className="mb-2 text-sm font-semibold text-k-text">
               People <Badge tone="neutral">{distinctPeople.length}</Badge>
             </h3>
             <div className="space-y-3">
@@ -282,8 +282,8 @@ export function ConfirmStep({ importId, rows, onClose }: ConfirmStepProps) {
                 const mapping = personMappings.find((m) => m.key === p.key);
                 if (!mapping) return null;
                 return (
-                  <div key={p.key} className="rounded border border-slate-200 p-3">
-                    <div className="mb-2 text-sm font-medium text-slate-800">
+                  <div key={p.key} className="rounded-md border border-k-border bg-k-surface p-3">
+                    <div className="mb-2 text-sm font-medium text-k-text">
                       {p.name || '(unnamed)'}
                       {p.email ? ` <${p.email}>` : ''}
                     </div>
@@ -334,7 +334,7 @@ export function ConfirmStep({ importId, rows, onClose }: ConfirmStepProps) {
           </section>
 
           {!canConfirm && (
-            <p className="text-sm text-amber-700">
+            <p className="text-sm text-k-warning-text">
               Complete all required selections before confirming.
             </p>
           )}

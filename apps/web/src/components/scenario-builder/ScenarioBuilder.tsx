@@ -83,10 +83,10 @@ export function ScenarioBuilder({
   return (
     <div className="space-y-6">
       <Card>
-        <h2 className="mb-4 text-lg font-semibold text-slate-900">New scenario</h2>
+        <h2 className="mb-4 text-base font-semibold text-k-text">New scenario</h2>
 
-        <div className="mb-6">
-          <label className="mb-1 block text-xs font-medium text-slate-600">Name</label>
+        <div className="mb-5">
+          <label className="mb-1 block text-xs font-medium text-k-text-secondary">Name</label>
           <Input
             value={name}
             placeholder="e.g. Apollo +1 week"
@@ -94,15 +94,15 @@ export function ScenarioBuilder({
           />
         </div>
 
-        <div className="mb-6 rounded bg-slate-50 p-4">
-          <h3 className="mb-3 text-sm font-semibold text-slate-900">Quick presets</h3>
+        <div className="mb-5 rounded-md border border-k-border bg-k-elevated/50 p-4">
+          <h3 className="mb-3 text-sm font-semibold text-k-text">Quick presets</h3>
           <div className="flex flex-wrap items-end gap-3">
             <div className="min-w-[14rem] flex-1">
-              <label className="mb-1 block text-xs font-medium text-slate-600">Project</label>
+              <label className="mb-1 block text-xs font-medium text-k-text-secondary">Project</label>
               <select
                 value={presetProjectId}
                 onChange={(e) => setPresetProjectId(e.target.value)}
-                className="block w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none"
+                className="block w-full rounded-md border border-k-border bg-k-surface px-3 py-2 text-sm text-k-text focus:border-k-border-strong focus:k-focus-ring"
               >
                 <option value="">Select project…</option>
                 {projects.map((p) => (
@@ -129,14 +129,14 @@ export function ScenarioBuilder({
           </div>
         </div>
 
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-slate-900">Operations</h3>
-          <div className="flex flex-wrap gap-2">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h3 className="text-sm font-semibold text-k-text">Operations</h3>
+          <div className="flex flex-wrap gap-1.5">
             {OP_ORDER.map((type) => (
               <Button
                 key={type}
                 variant="secondary"
-                className="text-xs"
+                className="px-2 py-1 text-xs"
                 onClick={() => addOp(makeEmptyOp(type))}
               >
                 + {OP_LABELS[type]}
@@ -146,9 +146,9 @@ export function ScenarioBuilder({
         </div>
 
         {ops.length === 0 ? (
-          <p className="rounded border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
+          <div className="rounded-md border border-dashed border-k-border bg-k-surface p-6 text-center text-sm text-k-text-muted">
             Add at least one operation.
-          </p>
+          </div>
         ) : (
           <ul className="space-y-4">
             {ops.map((op, index) => (
@@ -167,11 +167,11 @@ export function ScenarioBuilder({
         )}
 
         {ops.length > 0 && (
-          <div className="mt-6 rounded bg-slate-50 p-4">
-            <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <div className="mt-5 rounded-md border border-k-border bg-k-elevated/50 p-4">
+            <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-k-text-tertiary">
               Operation summary
             </h4>
-            <ol className="list-decimal space-y-1 pl-5 text-sm text-slate-700">
+            <ol className="list-decimal space-y-1 pl-5 text-sm text-k-text-secondary">
               {ops.map((op, i) => (
                 <li key={i}>{formatOp(op, { projects, people, skills, workItems })}</li>
               ))}
@@ -179,11 +179,9 @@ export function ScenarioBuilder({
           </div>
         )}
 
-        {create.isError && (
-          <ErrorState title="Failed to create scenario" message={create.error.message} />
-        )}
+        {create.isError && <ErrorState title="Failed to create scenario" message={create.error.message} />}
 
-        <div className="mt-6 flex items-center gap-3">
+        <div className="mt-5 flex items-center gap-3">
           <Button onClick={handleCreate} disabled={!canCreate || create.isPending}>
             {create.isPending ? <Spinner className="mr-2 h-4 w-4" /> : null}
             Create scenario
@@ -191,7 +189,7 @@ export function ScenarioBuilder({
           <Button variant="secondary" onClick={onCancel}>
             Cancel
           </Button>
-          <p className="text-sm text-slate-500">{ops.length} op{ops.length === 1 ? '' : 's'}</p>
+          <p className="text-sm text-k-text-muted">{ops.length} op{ops.length === 1 ? '' : 's'}</p>
         </div>
       </Card>
 

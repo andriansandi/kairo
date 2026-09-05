@@ -47,7 +47,7 @@ export function OpEditor({
         return (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Project</label>
+              <label className="mb-1 block text-xs font-medium text-k-text-secondary">Project</label>
               <Select
                 value={op.project_id}
                 onChange={(e) => onChange({ ...op, project_id: e.target.value })}
@@ -61,7 +61,7 @@ export function OpEditor({
               </Select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Weeks</label>
+              <label className="mb-1 block text-xs font-medium text-k-text-secondary">Weeks</label>
               <Input
                 type="number"
                 value={op.weeks}
@@ -76,7 +76,7 @@ export function OpEditor({
         return (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Project</label>
+              <label className="mb-1 block text-xs font-medium text-k-text-secondary">Project</label>
               <Select
                 value={op.project_id}
                 onChange={(e) => onChange({ ...op, project_id: e.target.value })}
@@ -90,7 +90,7 @@ export function OpEditor({
               </Select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Deadline</label>
+              <label className="mb-1 block text-xs font-medium text-k-text-secondary">Deadline</label>
               <Input
                 type="date"
                 value={op.date}
@@ -103,7 +103,7 @@ export function OpEditor({
         return (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="sm:col-span-1">
-              <label className="mb-1 block text-xs font-medium text-slate-600">Person</label>
+              <label className="mb-1 block text-xs font-medium text-k-text-secondary">Person</label>
               <Select
                 value={op.person_id}
                 onChange={(e) => onChange({ ...op, person_id: e.target.value })}
@@ -117,7 +117,7 @@ export function OpEditor({
               </Select>
             </div>
             <div className="sm:col-span-1">
-              <label className="mb-1 block text-xs font-medium text-slate-600">Project</label>
+              <label className="mb-1 block text-xs font-medium text-k-text-secondary">Project</label>
               <Select
                 value={op.project_id}
                 onChange={(e) => onChange({ ...op, project_id: e.target.value })}
@@ -131,7 +131,7 @@ export function OpEditor({
               </Select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Phase ID (optional)</label>
+              <label className="mb-1 block text-xs font-medium text-k-text-secondary">Phase ID (optional)</label>
               <Input
                 value={op.phase_id ?? ''}
                 placeholder="phase_id"
@@ -141,7 +141,7 @@ export function OpEditor({
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">FTE</label>
+              <label className="mb-1 block text-xs font-medium text-k-text-secondary">FTE</label>
               <Input
                 type="number"
                 step={0.1}
@@ -154,7 +154,7 @@ export function OpEditor({
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Start date</label>
+              <label className="mb-1 block text-xs font-medium text-k-text-secondary">Start date</label>
               <Input
                 type="date"
                 value={op.start_date}
@@ -164,7 +164,7 @@ export function OpEditor({
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">End date</label>
+              <label className="mb-1 block text-xs font-medium text-k-text-secondary">End date</label>
               <Input
                 type="date"
                 value={op.end_date}
@@ -178,8 +178,8 @@ export function OpEditor({
       case 'remove_allocation':
         return (
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">
-              Allocation ID <span className="text-slate-400">(advanced)</span>
+            <label className="mb-1 block text-xs font-medium text-k-text-secondary">
+              Allocation ID <span className="text-k-text-muted">(advanced)</span>
             </label>
             <Input
               value={op.allocation_id}
@@ -194,8 +194,8 @@ export function OpEditor({
         return (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">
-                Allocation ID <span className="text-slate-400">(advanced)</span>
+              <label className="mb-1 block text-xs font-medium text-k-text-secondary">
+                Allocation ID <span className="text-k-text-muted">(advanced)</span>
               </label>
               <Input
                 value={op.allocation_id}
@@ -206,7 +206,7 @@ export function OpEditor({
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">FTE</label>
+              <label className="mb-1 block text-xs font-medium text-k-text-secondary">FTE</label>
               <Input
                 type="number"
                 step={0.1}
@@ -221,8 +221,8 @@ export function OpEditor({
       case 'defer_work_items':
         return (
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">
-              Work item IDs <span className="text-slate-400">(one per line or comma-separated)</span>
+            <label className="mb-1 block text-xs font-medium text-k-text-secondary">
+              Work item IDs <span className="text-k-text-muted">(one per line or comma-separated)</span>
             </label>
             <Textarea
               value={stringifyWorkItemIds(op.work_item_ids)}
@@ -237,7 +237,7 @@ export function OpEditor({
         return (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Person</label>
+              <label className="mb-1 block text-xs font-medium text-k-text-secondary">Person</label>
               <Select
                 value={op.person_id}
                 onChange={(e) => onChange({ ...op, person_id: e.target.value })}
@@ -251,7 +251,7 @@ export function OpEditor({
               </Select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Skill</label>
+              <label className="mb-1 block text-xs font-medium text-k-text-secondary">Skill</label>
               <Select
                 value={op.skill_id}
                 onChange={(e) => onChange({ ...op, skill_id: e.target.value })}
@@ -265,7 +265,7 @@ export function OpEditor({
               </Select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Level</label>
+              <label className="mb-1 block text-xs font-medium text-k-text-secondary">Level</label>
               <Select
                 value={op.level}
                 onChange={(e) =>
@@ -293,7 +293,7 @@ export function OpEditor({
   });
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="rounded-lg border border-k-border bg-k-surface p-4">
       <div className="mb-3 flex items-center gap-3">
         <Select
           value={op.op}
@@ -313,8 +313,8 @@ export function OpEditor({
 
       <div className="space-y-3">{renderFields()}</div>
 
-      <p className="mt-3 text-sm text-slate-600">
-        <span className="font-medium text-slate-900">Preview:</span> {preview}
+      <p className="mt-3 text-sm text-k-text-secondary">
+        <span className="font-medium text-k-text">Preview:</span> {preview}
       </p>
     </div>
   );

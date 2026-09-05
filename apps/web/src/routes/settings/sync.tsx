@@ -66,10 +66,10 @@ function SyncNowCard() {
 
   return (
     <Card>
-      <h3 className="mb-4 text-sm font-semibold text-slate-900">Sync now</h3>
+      <h3 className="mb-4 text-sm font-semibold text-k-text">Sync now</h3>
       <div className="flex flex-wrap items-end gap-3">
         <div className="w-48">
-          <label htmlFor="sync-type" className="mb-1 block text-xs font-medium text-slate-600">
+          <label htmlFor="sync-type" className="mb-1 block text-xs font-medium text-k-text-secondary">
             Sync type
           </label>
           <Select id="sync-type" value={type} onChange={(e) => setType(e.target.value as SyncType)}>
@@ -83,18 +83,16 @@ function SyncNowCard() {
         </Button>
       </div>
 
-      {run.isError && (
-        <p className="mt-3 text-sm text-red-700">{run.error.message}</p>
-      )}
+      {run.isError && <p className="mt-3 text-sm text-k-danger-text">{run.error.message}</p>}
 
       {run.isSuccess && run.data.sync_run && (
-        <div className="mt-4 rounded border border-emerald-200 bg-emerald-50 p-4">
-          <p className="text-sm font-semibold text-emerald-900">Sync complete</p>
-          <p className="text-sm text-emerald-800">
+        <div className="mt-4 rounded-md border border-k-success-border bg-k-success-bg p-4">
+          <p className="text-sm font-semibold text-k-success-text">Sync complete</p>
+          <p className="text-sm text-k-success-text/90">
             {statsSummary(run.data.sync_run.stats as Record<string, unknown>) ?? 'Completed'}
           </p>
           {run.data.sync_run.status === 'partial' && (
-            <p className="mt-1 text-xs text-emerald-700">Completed with errors — see history below.</p>
+            <p className="mt-1 text-xs text-k-success-text/80">Completed with errors — see history below.</p>
           )}
         </div>
       )}
@@ -117,7 +115,7 @@ function SyncHistory() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-3 py-6 text-slate-500">
+      <div className="flex items-center gap-3 py-6 text-k-text-secondary">
         <Spinner />
         <span>Loading sync history…</span>
       </div>
@@ -125,9 +123,7 @@ function SyncHistory() {
   }
 
   if (error) {
-    return (
-      <ErrorState title="Failed to load sync history" message={error.message} retry={refetch} />
-    );
+    return <ErrorState title="Failed to load sync history" message={error.message} retry={refetch} />;
   }
 
   if (!data || data.length === 0) {
@@ -139,16 +135,16 @@ function SyncHistory() {
   return (
     <Table>
       <THead>
-        <TR>
+        <tr>
           <TH>Type</TH>
           <TH>Status</TH>
           <TH>Started</TH>
           <TH>Finished</TH>
           <TH>Summary</TH>
           <TH>Errors</TH>
-        </TR>
+        </tr>
       </THead>
-      <tbody className="divide-y divide-slate-200">
+      <tbody>
         {data.map((run: SyncRun) => {
           const isOpen = expanded.has(run.id);
           const summary = statsSummary(run.stats as Record<string, unknown>);
@@ -167,17 +163,17 @@ function SyncHistory() {
                   <button
                     type="button"
                     onClick={() => toggle(run.id)}
-                    className="text-sm font-medium text-slate-700 hover:text-slate-900"
+                    className="text-sm font-medium text-k-text-secondary hover:text-k-text"
                   >
-                    {errors.length} error{errors.length === 1 ? '' : 's'} {isOpen ? '▲' : '▼'}
+                    {errors.length} error{errors.length === 1 ? '' : 's'} {isOpen ? '· Hide' : '· Show'}
                   </button>
                 ) : (
-                  <span className="text-sm text-slate-500">—</span>
+                  <span className="text-sm text-k-text-muted">—</span>
                 )}
                 {isOpen && errors.length > 0 && (
-                  <ul className="mt-2 space-y-1 rounded border border-slate-200 bg-slate-50 p-2">
+                  <ul className="mt-2 space-y-1 rounded-md border border-k-border bg-k-elevated/50 p-2">
                     {errors.map((err, idx) => (
-                      <li key={idx} className="text-xs text-red-800">
+                      <li key={idx} className="text-xs text-k-danger-text">
                         {typeof err === 'string'
                           ? err
                           : err.message ?? JSON.stringify(err)}
@@ -202,7 +198,7 @@ function MappingQueue() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-3 py-6 text-slate-500">
+      <div className="flex items-center gap-3 py-6 text-k-text-secondary">
         <Spinner />
         <span>Loading mapping queue…</span>
       </div>
@@ -210,9 +206,7 @@ function MappingQueue() {
   }
 
   if (error) {
-    return (
-      <ErrorState title="Failed to load mapping queue" message={error.message} retry={refetch} />
-    );
+    return <ErrorState title="Failed to load mapping queue" message={error.message} retry={refetch} />;
   }
 
   if (!data || data.length === 0) {
@@ -252,13 +246,13 @@ function MappingQueueRow({
   const [query, setQuery] = useState(member.name);
 
   return (
-    <div className="flex flex-wrap items-end gap-3 rounded border border-slate-200 bg-white p-3">
+    <div className="flex flex-wrap items-end gap-3 rounded-md border border-k-border bg-k-surface p-3">
       <div className="min-w-[12rem] flex-1">
-        <p className="text-sm font-medium text-slate-900">{member.name}</p>
-        <p className="text-xs text-slate-500">{member.email}</p>
+        <p className="text-sm font-medium text-k-text">{member.name}</p>
+        <p className="text-xs text-k-text-muted">{member.email}</p>
       </div>
       <div className="w-56">
-        <label htmlFor={`person-search-${member.id}`} className="mb-1 block text-xs font-medium text-slate-600">
+        <label htmlFor={`person-search-${member.id}`} className="mb-1 block text-xs font-medium text-k-text-secondary">
           Find person
         </label>
         <Input
@@ -269,7 +263,7 @@ function MappingQueueRow({
         />
       </div>
       <div className="w-64">
-        <label htmlFor={`person-select-${member.id}`} className="mb-1 block text-xs font-medium text-slate-600">
+        <label htmlFor={`person-select-${member.id}`} className="mb-1 block text-xs font-medium text-k-text-secondary">
           Select person
         </label>
         <Select
@@ -310,14 +304,14 @@ function SyncSettingsPage() {
       <SyncNowCard />
 
       <section>
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+        <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-k-text-tertiary">
           Sync history
         </h2>
         <SyncHistory />
       </section>
 
       <section>
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+        <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-k-text-tertiary">
           Unmatched Plane members
         </h2>
         <MappingQueue />

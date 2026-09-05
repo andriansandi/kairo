@@ -29,9 +29,7 @@ import { useWorkItems } from '../api/work-items';
 import { DiffView, ScenarioBuilder } from '../components/scenario-builder';
 import { formatOp } from '../components/scenario-builder/utils';
 
-function statusTone(
-  status: string,
-): 'neutral' | 'success' | 'warning' | 'danger' {
+function statusTone(status: string): 'neutral' | 'success' | 'warning' | 'danger' {
   switch (status) {
     case 'saved':
       return 'success';
@@ -59,7 +57,7 @@ function ScenariosPage() {
   const workItems = useWorkItems({ limit: 1000 });
 
   return (
-    <div>
+    <div className="space-y-6">
       <PageHeader
         title="Scenarios"
         subtitle="What-if simulations against the current snapshot"
@@ -70,7 +68,7 @@ function ScenariosPage() {
         }
       />
 
-      <p className="mb-6 text-sm text-slate-600">
+      <p className="text-sm text-k-text-secondary">
         Scenarios never touch live data — applying changes is a human decision.
       </p>
 
@@ -79,7 +77,7 @@ function ScenariosPage() {
         people.data &&
         skills.data &&
         workItems.data && (
-          <div className="mb-8">
+          <div>
             <ScenarioBuilder
               projects={projects.data.items}
               people={people.data.items}
@@ -94,7 +92,7 @@ function ScenariosPage() {
           </div>
         )}
 
-      <Card>
+      <Card className="p-0 overflow-hidden">
         <ScenariosList
           scenarios={scenarios}
           projects={projects.data?.items ?? []}
@@ -111,7 +109,7 @@ function ScenariosPage() {
       </Card>
 
       {selectedId && (
-        <div className="mt-8">
+        <div>
           <ScenarioDetail
             id={selectedId}
             projects={projects.data?.items ?? []}
@@ -157,7 +155,7 @@ function ScenariosList({
 
   if (loading) {
     return (
-      <div className="flex items-center gap-3 py-8 text-slate-500">
+      <div className="flex items-center gap-3 py-8 text-k-text-secondary">
         <Spinner />
         <span>Loading scenarios…</span>
       </div>
@@ -188,22 +186,22 @@ function ScenariosList({
   return (
     <Table>
       <THead>
-        <TR>
+        <tr>
           <TH>Name</TH>
           <TH>Base snapshot</TH>
           <TH>Ops</TH>
           <TH>Status</TH>
           <TH>Created</TH>
           <TH>Actions</TH>
-        </TR>
+        </tr>
       </THead>
-      <tbody className="divide-y divide-slate-200">
+      <tbody>
         {items.map((s) => (
-          <TR key={s.id}>
+          <TR key={s.id} className={selectedId === s.id ? 'bg-k-elevated' : undefined}>
             <TD>
               <button
                 onClick={() => onSelect(selectedId === s.id ? null : s.id)}
-                className="font-medium text-slate-900 hover:underline"
+                className="font-medium text-k-text hover:underline"
               >
                 {s.name}
               </button>
@@ -218,7 +216,7 @@ function ScenariosList({
               <div className="flex items-center gap-2">
                 <Button
                   variant="secondary"
-                  className="text-xs"
+                  className="px-2 py-1 text-xs"
                   onClick={() => recompute.mutate(s.id)}
                   disabled={recompute.isPending}
                 >
@@ -226,7 +224,7 @@ function ScenariosList({
                 </Button>
                 <Button
                   variant="danger"
-                  className="text-xs"
+                  className="px-2 py-1 text-xs"
                   onClick={() => handleDelete(s.id, s.name)}
                   disabled={remove.isPending}
                 >
@@ -255,16 +253,16 @@ function ScenarioDetail({ id, projects, people, skills, onClose }: ScenarioDetai
   return (
     <Card>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-slate-900">
+        <h2 className="text-base font-semibold text-k-text">
           {data?.scenario.name ?? 'Scenario'}
         </h2>
-        <button onClick={onClose} className="text-sm font-medium text-slate-600 hover:text-slate-900">
+        <button onClick={onClose} className="text-sm font-medium text-k-text-secondary hover:text-k-text">
           Close
         </button>
       </div>
 
       {isLoading && (
-        <div className="flex items-center gap-3 py-6 text-slate-500">
+        <div className="flex items-center gap-3 py-6 text-k-text-secondary">
           <Spinner />
           <span>Loading scenario…</span>
         </div>
@@ -276,29 +274,29 @@ function ScenarioDetail({ id, projects, people, skills, onClose }: ScenarioDetai
         <div className="space-y-6">
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             <div>
-              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Status</dt>
+              <dt className="text-xs font-medium uppercase tracking-wider text-k-text-tertiary">Status</dt>
               <dd className="mt-1">
                 <Badge tone={statusTone(data.scenario.status)}>{data.scenario.status}</Badge>
               </dd>
             </div>
             <div>
-              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Base snapshot</dt>
-              <dd className="mt-1 text-sm text-slate-700">{data.scenario.base_snapshot_id}</dd>
+              <dt className="text-xs font-medium uppercase tracking-wider text-k-text-tertiary">Base snapshot</dt>
+              <dd className="mt-1 text-sm text-k-text-secondary font-mono">{data.scenario.base_snapshot_id}</dd>
             </div>
             <div>
-              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Operations</dt>
-              <dd className="mt-1 text-sm text-slate-700">{data.scenario.ops.length}</dd>
+              <dt className="text-xs font-medium uppercase tracking-wider text-k-text-tertiary">Operations</dt>
+              <dd className="mt-1 text-sm font-semibold text-k-text">{data.scenario.ops.length}</dd>
             </div>
             <div>
-              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Created</dt>
-              <dd className="mt-1 text-sm text-slate-700">{formatTimestamp(data.scenario.created_at)}</dd>
+              <dt className="text-xs font-medium uppercase tracking-wider text-k-text-tertiary">Created</dt>
+              <dd className="mt-1 text-sm text-k-text-secondary">{formatTimestamp(data.scenario.created_at)}</dd>
             </div>
           </div>
 
           {data.scenario.ops.length > 0 && (
             <div>
-              <h3 className="mb-2 text-sm font-semibold text-slate-900">Operations</h3>
-              <ol className="list-decimal space-y-1 pl-5 text-sm text-slate-700">
+              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-k-text-tertiary">Operations</h3>
+              <ol className="list-decimal space-y-1 pl-5 text-sm text-k-text-secondary">
                 {data.scenario.ops.map((op, i) => (
                   <li key={i}>{formatOp(op, { projects, people, skills, workItems: [] })}</li>
                 ))}

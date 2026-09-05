@@ -45,10 +45,10 @@ const RULES: { value: ConflictRule; label: string }[] = [
   { value: 'C10', label: 'C10 Unstaffed phase' },
 ];
 
-const SEVERITIES: { value: ConflictSeverity; label: string }[] = [
-  { value: 'critical', label: 'Critical' },
-  { value: 'at_risk', label: 'At Risk' },
-  { value: 'warning', label: 'Warning' },
+const SEVERITIES: { value: ConflictSeverity; label: string; tone: 'danger' | 'risk' | 'warning' }[] = [
+  { value: 'critical', label: 'Critical', tone: 'danger' },
+  { value: 'at_risk', label: 'At Risk', tone: 'risk' },
+  { value: 'warning', label: 'Warning', tone: 'warning' },
 ];
 
 const GROUP_ORDER: ConflictSeverity[] = ['critical', 'at_risk', 'warning'];
@@ -101,115 +101,112 @@ export default function Conflicts() {
   if (error) return <ErrorState title="Failed to load conflicts" message={error.message} retry={refetch} />;
 
   return (
-    <div>
-      <PageHeader title="Conflicts" subtitle="Detected capacity and timeline risks" />
+    <div className="space-y-6">
+      <PageHeader
+        title="Conflicts"
+        subtitle="Detected capacity and timeline risks"
+        actions={
+          <div className="flex items-center gap-2">
+            {SEVERITIES.map((s) => (
+              <Badge key={s.value} tone={s.tone}>
+                {s.label}: {counts[s.value]}
+              </Badge>
+            ))}
+          </div>
+        }
+      />
 
-      <section className="mb-4 flex flex-wrap gap-2">
-        {SEVERITIES.map((s) => (
-          <Badge key={s.value} tone={severityBadgeTone(s.value)}>
-            {s.label}: {counts[s.value]}
-          </Badge>
-        ))}
-      </section>
-
-      <Card className="mb-6">
-        <div className="mb-4">
-          <label className="mb-1 block text-xs font-medium text-slate-600">Rule</label>
-          <div className="flex flex-wrap gap-2">
-            <Button variant={rule === '' ? 'primary' : 'secondary'} onClick={() => setRule('')}>
+      <Card>
+        <div className="mb-5">
+          <label className="mb-1.5 block text-xs font-medium text-k-text-secondary">Rule</label>
+          <div className="flex flex-wrap gap-1.5">
+            <FilterButton active={rule === ''} onClick={() => setRule('')}>
               All
-            </Button>
+            </FilterButton>
             {RULES.map((r) => (
-              <Button
-                key={r.value}
-                variant={rule === r.value ? 'primary' : 'secondary'}
-                onClick={() => setRule(r.value)}
-              >
+              <FilterButton key={r.value} active={rule === r.value} onClick={() => setRule(r.value)}>
                 {r.label}
-              </Button>
+              </FilterButton>
             ))}
           </div>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Severity</label>
-          <div className="flex flex-wrap gap-2">
-            <Button variant={severity === '' ? 'primary' : 'secondary'} onClick={() => setSeverity('')}>
+          <label className="mb-1.5 block text-xs font-medium text-k-text-secondary">Severity</label>
+          <div className="flex flex-wrap gap-1.5">
+            <FilterButton active={severity === ''} onClick={() => setSeverity('')}>
               All
-            </Button>
+            </FilterButton>
             {SEVERITIES.map((s) => (
-              <Button
-                key={s.value}
-                variant={severity === s.value ? 'primary' : 'secondary'}
-                onClick={() => setSeverity(s.value)}
-              >
+              <FilterButton key={s.value} active={severity === s.value} onClick={() => setSeverity(s.value)}>
                 {s.label}
-              </Button>
+              </FilterButton>
             ))}
           </div>
         </div>
       </Card>
 
-      <Card className="mb-6 overflow-hidden p-0">
+      <Card className="p-0 overflow-hidden">
         {isLoading ? (
           <div className="flex items-center gap-2 p-6">
             <Spinner />
-            <span className="text-slate-500">Loading conflicts...</span>
+            <span className="text-k-text-secondary">Loading conflicts...</span>
           </div>
         ) : !filtered || filtered.length === 0 ? (
           <div className="p-6">
             <EmptyState title="No conflicts" message="Adjust filters or rebuild the snapshot to refresh." />
           </div>
         ) : (
-          <>
-            {GROUP_ORDER.map((s) => {
-              const items = grouped.get(s) ?? [];
-              if (items.length === 0) return null;
-              return (
-                <div key={s}>
-                  <div className="bg-slate-50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    {severityLabel(s)} ({items.length})
-                  </div>
-                  <Table>
-                    <THead>
-                      <tr>
-                        <TH>Rule</TH>
-                        <TH>Entity</TH>
-                        <TH>Window</TH>
-                        <TH>Severity</TH>
-                        <TH className="w-full">Explanation</TH>
-                      </tr>
-                    </THead>
-                    <tbody className="divide-y divide-slate-200">
-                      {items.map((c) => (
-                        <TR
-                          key={c.id}
-                          className="cursor-pointer"
-                          onClick={() => setSelectedId(selectedId === c.id ? null : c.id)}
-                        >
-                          <TD>
-                            <Badge tone="neutral">{c.rule}</Badge>
-                          </TD>
-                          <TD>{entityName(c)}</TD>
-                          <TD className="whitespace-nowrap">{c.window_start} → {c.window_end}</TD>
-                          <TD>
-                            <Badge tone={severityBadgeTone(c.severity)}>{severityLabel(c.severity)}</Badge>
-                          </TD>
-                          <TD>
-                            <p className="max-w-xl truncate text-slate-700">{c.explanation}</p>
-                          </TD>
-                        </TR>
-                      ))}
-                    </tbody>
-                  </Table>
+          GROUP_ORDER.map((s) => {
+            const items = grouped.get(s) ?? [];
+            if (items.length === 0) return null;
+            return (
+              <div key={s} className={severityGroupBorder(s)}>
+                <div className={`flex items-center gap-2 border-b border-k-border px-4 py-2 text-xs font-semibold uppercase tracking-wider ${severityGroupHeaderText(s)}`}>
+                  <span className={`h-2 w-2 rounded-full ${severityDot(s)}`} />
+                  {severityLabel(s)} ({items.length})
                 </div>
-              );
-            })}
-          </>
+                <Table>
+                  <THead>
+                    <tr>
+                      <TH className="w-0" />
+                      <TH>Rule</TH>
+                      <TH>Entity</TH>
+                      <TH>Window</TH>
+                      <TH>Severity</TH>
+                      <TH className="w-full">Explanation</TH>
+                    </tr>
+                  </THead>
+                  <tbody>
+                    {items.map((c) => (
+                      <TR
+                        key={c.id}
+                        className="cursor-pointer"
+                        onClick={() => setSelectedId(selectedId === c.id ? null : c.id)}
+                      >
+                        <TD className={`w-0 border-l-4 ${severityStripe(c.severity)}`} />
+                        <TD>
+                          <Badge tone="neutral">{c.rule}</Badge>
+                        </TD>
+                        <TD className="font-medium text-k-text">{entityName(c)}</TD>
+                        <TD className="whitespace-nowrap">{c.window_start} → {c.window_end}</TD>
+                        <TD>
+                          <Badge tone={severityBadgeTone(c.severity)}>{severityLabel(c.severity)}</Badge>
+                        </TD>
+                        <TD>
+                          <p className="max-w-xl truncate text-k-text-secondary">{c.explanation}</p>
+                        </TD>
+                      </TR>
+                    ))}
+                  </tbody>
+                </Table>
+              </div>
+            );
+          })
         )}
       </Card>
 
       {data?.nextCursor && (
-        <div className="mb-8 flex items-center justify-end">
+        <div className="flex items-center justify-end">
           <Button variant="secondary" onClick={() => setCursor(data.nextCursor)}>
             Next page
           </Button>
@@ -218,6 +215,26 @@ export default function Conflicts() {
 
       {selectedId && <ConflictDetail id={selectedId} onClose={() => setSelectedId(null)} />}
     </div>
+  );
+}
+
+function FilterButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <Button
+      variant={active ? 'primary' : 'secondary'}
+      onClick={onClick}
+      className={active ? 'px-3 py-1.5 text-xs' : 'px-3 py-1.5 text-xs border-transparent bg-k-elevated hover:bg-k-border'}
+    >
+      {children}
+    </Button>
   );
 }
 
@@ -232,7 +249,7 @@ function ConflictDetail({ id, onClose }: { id: string; onClose: () => void }) {
       <Card>
         <div className="flex items-center gap-2 py-4">
           <Spinner />
-          <span className="text-slate-500">Loading conflict detail...</span>
+          <span className="text-k-text-secondary">Loading conflict detail...</span>
         </div>
       </Card>
     );
@@ -249,20 +266,20 @@ function ConflictDetail({ id, onClose }: { id: string; onClose: () => void }) {
   }
 
   return (
-    <Card>
-      <div className="mb-4 flex items-start justify-between">
+    <Card className={`border-l-4 ${severityStripe(data.severity)}`}>
+      <div className="mb-5 flex items-start justify-between gap-4">
         <div>
-          <div className="mb-1 flex items-center gap-2">
+          <div className="mb-2 flex flex-wrap items-center gap-2">
             <Badge tone="neutral">{data.rule}</Badge>
             <Badge tone={severityBadgeTone(data.severity)}>{severityLabel(data.severity)}</Badge>
             <Badge tone={data.status === 'open' ? 'warning' : 'neutral'}>{data.status}</Badge>
           </div>
-          <h2 className="text-lg font-semibold text-slate-900">{entityName(data)}</h2>
-          <p className="text-sm text-slate-500">
+          <h2 className="text-lg font-semibold text-k-text">{entityName(data)}</h2>
+          <p className="text-sm text-k-text-muted">
             {data.window_start} → {data.window_end}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-shrink-0 items-center gap-2">
           <Button
             variant="secondary"
             onClick={() => {
@@ -294,28 +311,28 @@ function ConflictDetail({ id, onClose }: { id: string; onClose: () => void }) {
         </div>
       </div>
 
-      <div className="mb-6">
-        <h3 className="mb-2 text-sm font-semibold text-slate-900">Explanation</h3>
-        <p className="text-sm leading-relaxed text-slate-700">{data.explanation}</p>
+      <div className="mb-5 border-t border-k-border pt-4">
+        <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-k-text-tertiary">Explanation</h3>
+        <p className="text-sm leading-relaxed text-k-text-secondary">{data.explanation}</p>
       </div>
 
       {explain.error && (
-        <div className="mb-6 rounded border border-red-200 bg-red-50 p-3">
-          <p className="text-sm text-red-700">{explain.error.message}</p>
+        <div className="mb-5 rounded-md border border-k-danger-border bg-k-danger-bg p-3">
+          <p className="text-sm text-k-danger-text">{explain.error.message}</p>
         </div>
       )}
 
       {explanation && (
-        <div className="mb-6 rounded border border-slate-200 bg-slate-50 p-4">
+        <div className="mb-5 rounded-md border border-k-border bg-k-elevated/50 p-4">
           <div className="mb-2 flex items-center gap-2">
-            <h3 className="text-sm font-semibold text-slate-900">KAIRO analysis</h3>
+            <h3 className="text-sm font-semibold text-k-text">KAIRO analysis</h3>
             <Badge tone={explanation.output.mode === 'deterministic' ? 'success' : 'neutral'}>
               {explanation.output.mode === 'deterministic' ? 'verified data' : 'AI'}
             </Badge>
           </div>
-          <p className="text-sm leading-relaxed text-slate-700">{explanation.output.summary}</p>
+          <p className="text-sm leading-relaxed text-k-text-secondary">{explanation.output.summary}</p>
           {explanation.output.details && explanation.output.details.length > 0 && (
-            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-k-text-secondary">
               {explanation.output.details.map((detail, i) => (
                 <li key={i}>{detail}</li>
               ))}
@@ -326,7 +343,7 @@ function ConflictDetail({ id, onClose }: { id: string; onClose: () => void }) {
 
       {Object.keys(data.metrics).length > 0 && (
         <div>
-          <h3 className="mb-2 text-sm font-semibold text-slate-900">Metrics</h3>
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-k-text-tertiary">Metrics</h3>
           <Table>
             <THead>
               <tr>
@@ -334,10 +351,10 @@ function ConflictDetail({ id, onClose }: { id: string; onClose: () => void }) {
                 <TH>Value</TH>
               </tr>
             </THead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody>
               {Object.entries(data.metrics).map(([key, value]) => (
                 <TR key={key}>
-                  <TD className="font-medium">{key}</TD>
+                  <TD className="font-medium text-k-text">{key}</TD>
                   <TD>{typeof value === 'number' ? Number(value.toFixed(2)) : value}</TD>
                 </TR>
               ))}
@@ -363,10 +380,60 @@ function entityName(c: ConflictView): string {
   );
 }
 
-function severityBadgeTone(severity: ConflictSeverity): 'warning' | 'danger' {
-  return severity === 'warning' ? 'warning' : 'danger';
+function severityBadgeTone(severity: ConflictSeverity): 'warning' | 'danger' | 'risk' {
+  if (severity === 'warning') return 'warning';
+  if (severity === 'at_risk') return 'risk';
+  return 'danger';
 }
 
 function severityLabel(severity: ConflictSeverity): string {
   return severity === 'at_risk' ? 'At Risk' : severity.charAt(0).toUpperCase() + severity.slice(1);
+}
+
+function severityGroupBorder(severity: ConflictSeverity): string {
+  switch (severity) {
+    case 'critical':
+      return 'border-b border-k-border last:border-b-0';
+    default:
+      return 'border-b border-k-border last:border-b-0';
+  }
+}
+
+function severityGroupHeaderText(severity: ConflictSeverity): string {
+  switch (severity) {
+    case 'critical':
+      return 'text-k-danger-text bg-k-danger-bg/40';
+    case 'at_risk':
+      return 'text-k-risk-text bg-k-risk-bg/40';
+    case 'warning':
+      return 'text-k-warning-text bg-k-warning-bg/40';
+    default:
+      return 'text-k-text-tertiary bg-k-elevated';
+  }
+}
+
+function severityDot(severity: ConflictSeverity): string {
+  switch (severity) {
+    case 'critical':
+      return 'bg-k-heat-critical';
+    case 'at_risk':
+      return 'bg-k-heat-high';
+    case 'warning':
+      return 'bg-k-heat-med';
+    default:
+      return 'bg-k-text-muted';
+  }
+}
+
+function severityStripe(severity: ConflictSeverity): string {
+  switch (severity) {
+    case 'critical':
+      return 'border-k-heat-critical';
+    case 'at_risk':
+      return 'border-k-heat-high';
+    case 'warning':
+      return 'border-k-heat-med';
+    default:
+      return 'border-k-border';
+  }
 }

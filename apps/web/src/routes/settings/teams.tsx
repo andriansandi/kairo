@@ -62,13 +62,13 @@ function TeamList() {
             <TH />
           </tr>
         </THead>
-        <tbody className="divide-y divide-slate-200">
+        <tbody>
           {isLoading ? (
             <TR>
               <TD colSpan={4}>
                 <div className="flex items-center gap-2 py-4">
                   <Spinner />
-                  <span className="text-slate-500">Loading teams...</span>
+                  <span className="text-k-text-secondary">Loading teams...</span>
                 </div>
               </TD>
             </TR>
@@ -106,7 +106,7 @@ function TeamRow({
   return (
     <>
       <TR>
-        <TD className="font-medium text-slate-900">{team.name}</TD>
+        <TD className="font-medium text-k-text">{team.name}</TD>
         <TD>
           <Badge
             tone={
@@ -129,7 +129,7 @@ function TeamRow({
       </TR>
       {expanded && (
         <TR>
-          <TD colSpan={4} className="bg-slate-50 p-0">
+          <TD colSpan={4} className="bg-k-elevated/50 p-0">
             <TeamMemberManager teamId={team.id} memberIds={team.member_ids} />
           </TD>
         </TR>
@@ -154,22 +154,22 @@ function TeamMemberManager({ teamId, memberIds }: { teamId: string; memberIds: s
 
   return (
     <div className="p-4">
-      <h3 className="mb-3 text-sm font-semibold text-slate-900">Members</h3>
+      <h3 className="mb-3 text-sm font-semibold text-k-text">Members</h3>
       {memberIds.length === 0 ? (
-        <p className="mb-4 text-sm text-slate-500">No members yet.</p>
+        <p className="mb-4 text-sm text-k-text-muted">No members yet.</p>
       ) : (
         <ul className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {memberIds.map((id) => (
             <li
               key={id}
-              className="flex items-center justify-between rounded border border-slate-200 bg-white px-3 py-2 text-sm"
+              className="flex items-center justify-between rounded-md border border-k-border bg-k-surface px-3 py-2 text-sm"
             >
               <span className="truncate" title={id}>
                 {personMap.get(id) ?? id}
               </span>
               <button
                 onClick={() => remove.mutate({ teamId, personId: id })}
-                className="ml-2 text-xs font-medium text-red-600 hover:text-red-700"
+                className="ml-2 text-xs font-medium text-k-danger-text hover:text-red-800"
               >
                 Remove
               </button>
@@ -210,10 +210,10 @@ function CreateTeamForm() {
 
   return (
     <Card>
-      <h2 className="mb-4 text-lg font-semibold text-slate-900">Create team</h2>
+      <h2 className="mb-4 text-base font-semibold text-k-text">Create team</h2>
       <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Name</label>
+          <label className="mb-1 block text-xs font-medium text-k-text-secondary">Name</label>
           <Input
             required
             value={form.name}
@@ -221,7 +221,7 @@ function CreateTeamForm() {
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Type</label>
+          <label className="mb-1 block text-xs font-medium text-k-text-secondary">Type</label>
           <Select
             value={form.type}
             onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as TeamType }))}

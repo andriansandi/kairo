@@ -30,8 +30,8 @@ export function MappingStep({ headers, mapping, onMappingChange, onContinue, onB
 
   return (
     <Card>
-      <h2 className="mb-1 text-lg font-semibold text-slate-900">2. Map columns</h2>
-      <p className="mb-4 text-sm text-slate-600">
+      <h2 className="mb-1 text-base font-semibold text-k-text">2. Map columns</h2>
+      <p className="mb-4 text-sm text-k-text-secondary">
         Match each KAIRO field to a column in your sheet. Required fields must be mapped before you can continue.
       </p>
 
@@ -40,9 +40,9 @@ export function MappingStep({ headers, mapping, onMappingChange, onContinue, onB
           const required = REQUIRED_FIELDS.includes(field);
           return (
             <div key={field}>
-              <label className="mb-1 block text-sm font-medium text-slate-700">
+              <label className="mb-1 block text-sm font-medium text-k-text-secondary">
                 {FIELD_LABELS[field]}
-                {required && <span className="ml-1 text-red-600">*</span>}
+                {required && <span className="ml-1 text-k-danger-text">*</span>}
               </label>
               <Select value={mapping[field] ?? ''} onChange={(e) => updateField(field, e.target.value)}>
                 <option value="">— unmapped —</option>

@@ -32,19 +32,21 @@ export function ReviewStep({ previewRows, buildResult, onBack, onSubmit, isSubmi
 
   return (
     <Card>
-      <h2 className="mb-1 text-lg font-semibold text-slate-900">3. Review rows</h2>
-          <p className="mb-4 text-sm text-slate-600">
-        Valid rows: <strong>{validRows.length}</strong> · Preview rows: <strong>{previewRows.length}</strong> · Errors:{' '}
-        <strong>{errors.length}</strong> · Warnings: <strong>{warnings.length}</strong>
+      <h2 className="mb-1 text-base font-semibold text-k-text">3. Review rows</h2>
+      <p className="mb-4 text-sm text-k-text-secondary">
+        Valid rows: <strong className="text-k-text">{validRows.length}</strong> · Preview rows:{' '}
+        <strong className="text-k-text">{previewRows.length}</strong> · Errors:{' '}
+        <strong className="text-k-danger-text">{errors.length}</strong> · Warnings:{' '}
+        <strong className="text-k-warning-text">{warnings.length}</strong>
       </p>
 
       {hasErrors && (
-        <div className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+        <div className="mb-4 rounded-md border border-k-danger-border bg-k-danger-bg p-3 text-sm text-k-danger-text">
           Some rows have errors and will be skipped. Fix the file and re-upload, or continue to submit the valid rows.
         </div>
       )}
 
-      <div className="max-h-96 overflow-auto">
+      <div className="max-h-96 overflow-auto rounded-md border border-k-border">
         <Table>
           <THead>
             <tr>
@@ -58,13 +60,13 @@ export function ReviewStep({ previewRows, buildResult, onBack, onSubmit, isSubmi
               <TH>Issues</TH>
             </tr>
           </THead>
-          <tbody className="divide-y divide-slate-200">
+          <tbody>
             {previewRows.map((row, idx) => {
               const issues = byRow.get(idx + 1);
               const errCount = issues?.errors.length ?? 0;
               const warnCount = issues?.warnings.length ?? 0;
               return (
-                <TR key={idx} className={errCount > 0 ? 'bg-red-50' : warnCount > 0 ? 'bg-amber-50' : undefined}>
+                <TR key={idx} className={errCount > 0 ? 'bg-k-danger-bg/40' : warnCount > 0 ? 'bg-k-warning-bg/40' : undefined}>
                   <TD>{idx + 1}</TD>
                   <TD>{row.project_name}</TD>
                   <TD>{row.phase_name}</TD>
@@ -91,9 +93,9 @@ export function ReviewStep({ previewRows, buildResult, onBack, onSubmit, isSubmi
       </div>
 
       {hasErrors && (
-        <div className="mt-4 rounded border border-red-200 bg-red-50 p-3">
-          <h3 className="text-sm font-semibold text-red-900">Errors</h3>
-          <ul className="mt-1 list-inside list-disc text-sm text-red-700">
+        <div className="mt-4 rounded-md border border-k-danger-border bg-k-danger-bg p-3">
+          <h3 className="text-sm font-semibold text-k-danger-text">Errors</h3>
+          <ul className="mt-1 list-inside list-disc text-sm text-k-danger-text/90">
             {errors.map((e, i) => (
               <li key={i}>
                 Row {e.row}

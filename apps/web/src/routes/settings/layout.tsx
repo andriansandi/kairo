@@ -11,16 +11,16 @@ const tabs = [
 function SettingsLayout() {
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-bold text-slate-900">Settings</h1>
-      <nav className="mb-6 border-b border-slate-200">
+      <PageHeader title="Settings" />
+      <nav className="mb-6 border-b border-k-border">
         <ul className="flex gap-6">
           {tabs.map((t) => (
             <li key={t.path}>
               <Link
                 to={t.path}
                 activeOptions={{ exact: t.path === '/settings' }}
-                className="inline-block border-b-2 border-transparent px-1 pb-3 text-sm font-medium text-slate-600 hover:text-slate-900"
-                activeProps={{ className: 'border-slate-900 text-slate-900' }}
+                className="inline-block border-b-2 border-transparent px-1 pb-3 text-sm font-medium text-k-text-secondary transition-colors hover:text-k-text"
+                activeProps={{ className: 'border-k-text text-k-text' }}
               >
                 {t.label}
               </Link>
@@ -31,6 +31,10 @@ function SettingsLayout() {
       <Outlet />
     </div>
   );
+}
+
+function PageHeader({ title }: { title: string }) {
+  return <h1 className="mb-6 text-2xl font-semibold tracking-tight text-k-text">{title}</h1>;
 }
 
 export const settingsRoute = createRoute({

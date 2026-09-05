@@ -87,30 +87,28 @@ function People() {
     <div>
       <PageHeader title="People" subtitle="Manage team members, skills, and availability" />
 
-      <section className="mb-6 grid gap-4 lg:grid-cols-[1fr_auto] items-end">
-        <div className="flex flex-wrap gap-3">
-          <Input
-            placeholder="Search by name or email"
-            value={filters.q}
-            onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))}
-            onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
-            className="w-64"
-          />
-          <Select
-            value={filters.active}
-            onChange={(e) =>
-              setFilters((f) => ({ ...f, active: e.target.value as Filters['active'], cursor: null }))
-            }
-            className="w-40"
-          >
-            <option value="true">Active</option>
-            <option value="false">Inactive</option>
-            <option value="">All</option>
-          </Select>
-          <Button variant="secondary" onClick={applyFilters}>
-            Filter
-          </Button>
-        </div>
+      <section className="mb-6 flex flex-wrap items-end gap-3">
+        <Input
+          placeholder="Search by name or email"
+          value={filters.q}
+          onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))}
+          onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
+          className="w-64"
+        />
+        <Select
+          value={filters.active}
+          onChange={(e) =>
+            setFilters((f) => ({ ...f, active: e.target.value as Filters['active'], cursor: null }))
+          }
+          className="w-40"
+        >
+          <option value="true">Active</option>
+          <option value="false">Inactive</option>
+          <option value="">All</option>
+        </Select>
+        <Button variant="secondary" onClick={applyFilters}>
+          Filter
+        </Button>
       </section>
 
       {error ? (
@@ -130,13 +128,13 @@ function People() {
                   <TH className="text-right">Actions</TH>
                 </tr>
               </THead>
-              <tbody className="divide-y divide-slate-200">
+              <tbody>
                 {isLoading ? (
                   <TR>
                     <TD colSpan={7}>
                       <div className="flex items-center gap-2 py-4">
                         <Spinner />
-                        <span className="text-slate-500">Loading people...</span>
+                        <span className="text-k-text-secondary">Loading people...</span>
                       </div>
                     </TD>
                   </TR>
@@ -153,7 +151,7 @@ function People() {
                         <Link
                           to="/people/$personId"
                           params={{ personId: person.id }}
-                          className="font-medium text-slate-900 hover:underline"
+                          className="font-medium text-k-text hover:underline"
                         >
                           {person.name}
                         </Link>
@@ -179,7 +177,7 @@ function People() {
 
           {data && data.nextCursor && (
             <div className="mb-8 flex items-center justify-between">
-              <span className="text-sm text-slate-500">
+              <span className="text-sm text-k-text-secondary">
                 Showing {data.items.length} result{data.items.length === 1 ? '' : 's'}
               </span>
               <Button
@@ -226,10 +224,10 @@ function AddPersonForm() {
 
   return (
     <Card>
-      <h2 className="mb-4 text-lg font-semibold text-slate-900">Add person</h2>
+      <h2 className="mb-4 text-base font-semibold text-k-text">Add person</h2>
       <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Name</label>
+          <label className="mb-1 block text-xs font-medium text-k-text-secondary">Name</label>
           <Input
             required
             value={form.name}
@@ -237,7 +235,7 @@ function AddPersonForm() {
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Email</label>
+          <label className="mb-1 block text-xs font-medium text-k-text-secondary">Email</label>
           <Input
             required
             type="email"
@@ -246,7 +244,7 @@ function AddPersonForm() {
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Role</label>
+          <label className="mb-1 block text-xs font-medium text-k-text-secondary">Role</label>
           <Select
             required
             value={form.role_id}
@@ -261,7 +259,7 @@ function AddPersonForm() {
           </Select>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Seniority</label>
+          <label className="mb-1 block text-xs font-medium text-k-text-secondary">Seniority</label>
           <Select
             value={String(form.seniority)}
             onChange={(e) => setForm((f) => ({ ...f, seniority: Number(e.target.value) as 1 | 2 | 3 | 4 }))}
@@ -274,7 +272,7 @@ function AddPersonForm() {
           </Select>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Hours / day</label>
+          <label className="mb-1 block text-xs font-medium text-k-text-secondary">Hours / day</label>
           <Input
             type="number"
             min={1}
@@ -284,7 +282,7 @@ function AddPersonForm() {
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Overhead %</label>
+          <label className="mb-1 block text-xs font-medium text-k-text-secondary">Overhead %</label>
           <Input
             type="number"
             min={0}
@@ -334,9 +332,7 @@ function DeletePersonButton({
       >
         {remove.isPending ? 'Deleting...' : 'Delete'}
       </Button>
-      {remove.error && (
-        <span className="max-w-[12rem] text-xs text-red-600">{remove.error.message}</span>
-      )}
+      {remove.error && <span className="max-w-[12rem] text-xs text-k-danger-text">{remove.error.message}</span>}
     </div>
   );
 }
@@ -353,7 +349,7 @@ function PersonDetail() {
       <Card>
         <div className="flex items-center gap-2 py-4">
           <Spinner />
-          <span className="text-slate-500">Loading person...</span>
+          <span className="text-k-text-secondary">Loading person...</span>
         </div>
       </Card>
     );
@@ -406,29 +402,25 @@ function ProfileCard({ person, teams }: { person: Person; teams: PersonDetailDat
   return (
     <Card>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-slate-900">Profile</h2>
+        <h2 className="text-base font-semibold text-k-text">Profile</h2>
         <div className="flex items-center gap-2">
           <Badge tone={person.active ? 'success' : 'neutral'}>
             {person.active ? 'Active' : 'Inactive'}
           </Badge>
-          <DeletePersonButton
-            person={person}
-            size="default"
-            onDeleted={() => navigate({ to: '/people' })}
-          />
+          <DeletePersonButton person={person} size="default" onDeleted={() => navigate({ to: '/people' })} />
         </div>
       </div>
       <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Name</label>
+          <label className="mb-1 block text-xs font-medium text-k-text-secondary">Name</label>
           <Input value={form.name ?? ''} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Email</label>
+          <label className="mb-1 block text-xs font-medium text-k-text-secondary">Email</label>
           <Input value={form.email ?? ''} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Role</label>
+          <label className="mb-1 block text-xs font-medium text-k-text-secondary">Role</label>
           <Select value={form.role_id ?? ''} onChange={(e) => setForm((f) => ({ ...f, role_id: e.target.value }))}>
             <option value="">Select role</option>
             {roles?.map((r) => (
@@ -439,7 +431,7 @@ function ProfileCard({ person, teams }: { person: Person; teams: PersonDetailDat
           </Select>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Seniority</label>
+          <label className="mb-1 block text-xs font-medium text-k-text-secondary">Seniority</label>
           <Select
             value={String(form.seniority ?? 1)}
             onChange={(e) => setForm((f) => ({ ...f, seniority: Number(e.target.value) as 1 | 2 | 3 | 4 }))}
@@ -452,7 +444,7 @@ function ProfileCard({ person, teams }: { person: Person; teams: PersonDetailDat
           </Select>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Hours / day</label>
+          <label className="mb-1 block text-xs font-medium text-k-text-secondary">Hours / day</label>
           <Input
             type="number"
             value={form.hours_per_day ?? 8}
@@ -460,7 +452,7 @@ function ProfileCard({ person, teams }: { person: Person; teams: PersonDetailDat
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Overhead %</label>
+          <label className="mb-1 block text-xs font-medium text-k-text-secondary">Overhead %</label>
           <Input
             type="number"
             value={Math.round((form.overhead_pct ?? 0.2) * 100)}
@@ -468,7 +460,7 @@ function ProfileCard({ person, teams }: { person: Person; teams: PersonDetailDat
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Status</label>
+          <label className="mb-1 block text-xs font-medium text-k-text-secondary">Status</label>
           <Select value={form.active ? 'true' : 'false'} onChange={(e) => setForm((f) => ({ ...f, active: e.target.value === 'true' }))}>
             <option value="true">Active</option>
             <option value="false">Inactive</option>
@@ -478,7 +470,7 @@ function ProfileCard({ person, teams }: { person: Person; teams: PersonDetailDat
           <Button type="submit" disabled={update.isPending}>
             {update.isPending ? 'Saving...' : 'Save profile'}
           </Button>
-          {teams.length > 0 && <span className="text-sm text-slate-500">Teams: {teams.map((t) => t.name).join(', ')}</span>}
+          {teams.length > 0 && <span className="text-sm text-k-text-secondary">Teams: {teams.map((t) => t.name).join(', ')}</span>}
         </div>
       </form>
     </Card>
@@ -530,7 +522,7 @@ function SkillsCard({ personId, skills }: { personId: string; skills: PersonSkil
 
   return (
     <Card>
-      <h2 className="mb-4 text-lg font-semibold text-slate-900">Skills</h2>
+      <h2 className="mb-4 text-base font-semibold text-k-text">Skills</h2>
       {rows.length === 0 ? (
         <EmptyState title="No skills yet" message="Add skills to build the skills matrix." />
       ) : (
@@ -557,7 +549,7 @@ function SkillsCard({ personId, skills }: { personId: string; skills: PersonSkil
                   </option>
                 ))}
               </Select>
-              <span className="text-sm text-slate-500">{skillNames.get(row.skill_id) ?? row.skill_id}</span>
+              <span className="text-sm text-k-text-secondary">{skillNames.get(row.skill_id) ?? row.skill_id}</span>
               <Button variant="secondary" onClick={() => removeRow(idx)}>
                 Remove
               </Button>
@@ -589,14 +581,14 @@ function PtoCard({ personId, pto }: { personId: string; pto: PtoEntry[] }) {
 
   return (
     <Card>
-      <h2 className="mb-4 text-lg font-semibold text-slate-900">Time off</h2>
+      <h2 className="mb-4 text-base font-semibold text-k-text">Time off</h2>
       {pto.length === 0 ? (
         <EmptyState title="No PTO entries" message="Add time off blocks here." />
       ) : (
-        <ul className="mb-4 divide-y divide-slate-200">
+        <ul className="mb-4 divide-y divide-k-border">
           {pto.map((entry) => (
             <li key={entry.id} className="flex items-center justify-between py-2">
-              <span className="text-sm text-slate-700">
+              <span className="text-sm text-k-text-secondary">
                 {entry.dates.join(', ')} · <Badge tone="neutral">{entry.type}</Badge>
               </span>
               <Button variant="danger" onClick={() => remove.mutate({ personId, ptoId: entry.id })}>
@@ -608,15 +600,15 @@ function PtoCard({ personId, pto }: { personId: string; pto: PtoEntry[] }) {
       )}
       <form onSubmit={submit} className="grid gap-3 sm:grid-cols-5 items-end">
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Start date</label>
+          <label className="mb-1 block text-xs font-medium text-k-text-secondary">Start date</label>
           <Input type="date" required value={form.start_date} onChange={(e) => setForm((f) => ({ ...f, start_date: e.target.value }))} />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">End date</label>
+          <label className="mb-1 block text-xs font-medium text-k-text-secondary">End date</label>
           <Input type="date" required value={form.end_date} onChange={(e) => setForm((f) => ({ ...f, end_date: e.target.value }))} />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Type</label>
+          <label className="mb-1 block text-xs font-medium text-k-text-secondary">Type</label>
           <Select value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as PtoEntry['type'] }))}>
             <option value="pto">PTO</option>
             <option value="holiday">Holiday</option>
@@ -662,11 +654,11 @@ function AllocationsCard({ personId, allocations }: { personId: string; allocati
 
   return (
     <Card>
-      <h2 className="mb-4 text-lg font-semibold text-slate-900">Allocations</h2>
+      <h2 className="mb-4 text-base font-semibold text-k-text">Allocations</h2>
       {allocations.length === 0 ? (
         <EmptyState title="No allocations" message="Allocate this person to a project." />
       ) : (
-        <div className="mb-4 overflow-hidden rounded-lg border border-slate-200">
+        <div className="mb-4 overflow-hidden rounded-lg border border-k-border">
           <Table>
             <THead>
               <tr>
@@ -678,10 +670,10 @@ function AllocationsCard({ personId, allocations }: { personId: string; allocati
                 <TH />
               </tr>
             </THead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody>
               {allocations.map((a) => (
                 <TR key={a.id}>
-                  <TD>{projectNames.get(a.project_id) ?? a.project_id}</TD>
+                  <TD className="font-medium text-k-text">{projectNames.get(a.project_id) ?? a.project_id}</TD>
                   <TD>{a.fte}</TD>
                   <TD>{a.start_date}</TD>
                   <TD>{a.end_date}</TD>
@@ -715,7 +707,7 @@ function AllocationsCard({ personId, allocations }: { personId: string; allocati
       ) : (
         <form onSubmit={submit} className="grid gap-3 sm:grid-cols-6 items-end">
           <div className="sm:col-span-2">
-            <label className="mb-1 block text-xs font-medium text-slate-600">Project</label>
+            <label className="mb-1 block text-xs font-medium text-k-text-secondary">Project</label>
             <Select
               required
               value={form.project_id}
@@ -731,7 +723,7 @@ function AllocationsCard({ personId, allocations }: { personId: string; allocati
             </Select>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">FTE</label>
+            <label className="mb-1 block text-xs font-medium text-k-text-secondary">FTE</label>
             <Input
               type="number"
               min={0}
@@ -743,15 +735,15 @@ function AllocationsCard({ personId, allocations }: { personId: string; allocati
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Start</label>
+            <label className="mb-1 block text-xs font-medium text-k-text-secondary">Start</label>
             <Input type="date" required value={form.start_date} onChange={(e) => setForm((f) => ({ ...f, start_date: e.target.value }))} />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">End</label>
+            <label className="mb-1 block text-xs font-medium text-k-text-secondary">End</label>
             <Input type="date" required value={form.end_date} onChange={(e) => setForm((f) => ({ ...f, end_date: e.target.value }))} />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Status</label>
+            <label className="mb-1 block text-xs font-medium text-k-text-secondary">Status</label>
             <Select value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as Allocation['status'] }))}>
               <option value="committed">Committed</option>
               <option value="planned">Planned</option>
@@ -783,8 +775,8 @@ function UtilizationCard({ personId }: { personId: string }) {
   return (
     <Card>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-slate-900">Utilization</h2>
-        <span className="text-xs text-slate-500">
+        <h2 className="text-base font-semibold text-k-text">Utilization</h2>
+        <span className="text-xs text-k-text-muted">
           {from} → {to}
         </span>
       </div>
@@ -802,14 +794,14 @@ function UtilizationCard({ personId }: { personId: string }) {
               return (
                 <div key={w} className="flex flex-col items-center gap-1">
                   <div
-                    className={`flex h-10 w-12 items-center justify-center rounded text-xs font-medium ${
-                      e ? heatClass(value, flagged) : 'bg-slate-100 text-slate-400'
+                    className={`flex h-10 w-12 items-center justify-center rounded-md text-xs font-medium ${
+                      e ? heatClass(value, flagged) : 'bg-k-elevated text-k-text-muted'
                     }`}
                     title={e ? formatWeekRange(w) : `${w}: no data`}
                   >
                     {display}
                   </div>
-                  <span className="text-[10px] text-slate-500">{shortWeekLabel(w)}</span>
+                  <span className="text-[10px] text-k-text-muted">{shortWeekLabel(w)}</span>
                 </div>
               );
             })}
@@ -818,22 +810,22 @@ function UtilizationCard({ personId }: { personId: string }) {
           {isLoading && (
             <div className="mb-4 flex items-center gap-2">
               <Spinner />
-              <span className="text-sm text-slate-500">Loading utilization...</span>
+              <span className="text-sm text-k-text-secondary">Loading utilization...</span>
             </div>
           )}
 
-          <div className="flex flex-wrap gap-3 text-xs text-slate-600">
+          <div className="flex flex-wrap gap-3 text-xs text-k-text-secondary">
             <span className="flex items-center gap-1">
-              <span className="inline-block h-3 w-3 rounded bg-emerald-100" /> ≤85%
+              <span className="inline-block h-3 w-3 rounded bg-k-success-bg ring-1 ring-inset ring-k-success-border" /> ≤85%
             </span>
             <span className="flex items-center gap-1">
-              <span className="inline-block h-3 w-3 rounded bg-amber-100" /> ≤100%
+              <span className="inline-block h-3 w-3 rounded bg-k-warning-bg ring-1 ring-inset ring-k-warning-border" /> ≤100%
             </span>
             <span className="flex items-center gap-1">
-              <span className="inline-block h-3 w-3 rounded bg-orange-100" /> ≤125%
+              <span className="inline-block h-3 w-3 rounded bg-k-risk-bg ring-1 ring-inset ring-k-risk-border" /> ≤125%
             </span>
             <span className="flex items-center gap-1">
-              <span className="inline-block h-3 w-3 rounded bg-red-100" /> &gt;125%
+              <span className="inline-block h-3 w-3 rounded bg-k-danger-bg ring-1 ring-inset ring-k-danger-border" /> &gt;125%
             </span>
           </div>
         </>

@@ -56,13 +56,13 @@ function Skills() {
                 <TH />
               </tr>
             </THead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody>
               {isLoading ? (
                 <TR>
                   <TD colSpan={4}>
                     <div className="flex items-center gap-2 py-4">
                       <Spinner />
-                      <span className="text-slate-500">Loading skills...</span>
+                      <span className="text-k-text-secondary">Loading skills...</span>
                     </div>
                   </TD>
                 </TR>
@@ -145,7 +145,7 @@ function SkillRow({ skill }: { skill: Skill }) {
 
   return (
     <TR>
-      <TD className="font-medium text-slate-900">{skill.name}</TD>
+      <TD className="font-medium text-k-text">{skill.name}</TD>
       <TD>{skill.category}</TD>
       <TD>
         {skill.aliases.length > 0 ? (
@@ -157,7 +157,7 @@ function SkillRow({ skill }: { skill: Skill }) {
             ))}
           </div>
         ) : (
-          <span className="text-slate-400">—</span>
+          <span className="text-k-text-muted">—</span>
         )}
       </TD>
       <TD>
@@ -180,10 +180,10 @@ function AddSkillForm() {
 
   return (
     <Card>
-      <h2 className="mb-4 text-lg font-semibold text-slate-900">Add skill</h2>
+      <h2 className="mb-4 text-base font-semibold text-k-text">Add skill</h2>
       <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Name</label>
+          <label className="mb-1 block text-xs font-medium text-k-text-secondary">Name</label>
           <Input
             required
             value={form.name}
@@ -191,7 +191,7 @@ function AddSkillForm() {
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Category</label>
+          <label className="mb-1 block text-xs font-medium text-k-text-secondary">Category</label>
           <Input
             required
             value={form.category}
@@ -199,7 +199,7 @@ function AddSkillForm() {
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Aliases</label>
+          <label className="mb-1 block text-xs font-medium text-k-text-secondary">Aliases</label>
           <Input
             placeholder="comma, separated"
             value={(form.aliases ?? []).join(', ')}
@@ -226,11 +226,11 @@ function CoverageSection() {
 
   return (
     <Card className="mt-6">
-      <h2 className="mb-4 text-lg font-semibold text-slate-900">Coverage</h2>
+      <h2 className="mb-4 text-base font-semibold text-k-text">Coverage</h2>
       {error ? (
         <ErrorState title="Failed to load coverage" message={error.message} retry={refetch} />
       ) : isLoading ? (
-        <div className="flex items-center gap-2 py-4 text-slate-500">
+        <div className="flex items-center gap-2 py-4 text-k-text-secondary">
           <Spinner />
           <span>Loading coverage…</span>
         </div>
@@ -251,13 +251,13 @@ function CoverageSection() {
                 <TH />
               </tr>
             </THead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody>
               {data.coverage.map((row) => (
                 <CoverageRow key={row.skill_id} row={row} />
               ))}
             </tbody>
           </Table>
-          <p className="mt-4 text-xs text-slate-500">
+          <p className="mt-4 text-xs text-k-text-muted">
             SPOF = exactly one person at Advanced+ for this skill (see Conflicts for the full C8 risk).
           </p>
         </>
@@ -269,7 +269,7 @@ function CoverageSection() {
 function CoverageRow({ row }: { row: SkillCoverage }) {
   return (
     <TR>
-      <TD className="font-medium text-slate-900">{row.skill_name}</TD>
+      <TD className="font-medium text-k-text">{row.skill_name}</TD>
       <TD className="text-center">{row.level_counts[0]}</TD>
       <TD className="text-center">{row.level_counts[1]}</TD>
       <TD className="text-center">{row.level_counts[2]}</TD>

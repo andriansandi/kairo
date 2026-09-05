@@ -10,14 +10,14 @@ interface DiffViewProps {
 
 function verdictTone(
   verdict: string,
-): 'neutral' | 'success' | 'warning' | 'danger' {
+): 'neutral' | 'success' | 'warning' | 'risk' | 'danger' {
   switch (verdict) {
     case 'healthy':
       return 'success';
     case 'warning':
       return 'warning';
     case 'at_risk':
-      return 'danger';
+      return 'risk';
     case 'critical':
       return 'danger';
     case 'missing':
@@ -81,22 +81,22 @@ export function DiffView({ diff, projects, people }: DiffViewProps) {
       </div>
 
       {capacityDeltas.length > 0 && (
-        <Card>
-          <h3 className="mb-3 text-sm font-semibold text-slate-900">Capacity changes</h3>
+        <Card className="p-0 overflow-hidden">
+          <h3 className="px-5 py-3 text-sm font-semibold text-k-text">Capacity changes</h3>
           <Table>
             <THead>
-              <TR>
+              <tr>
                 <TH>Person</TH>
                 <TH>Week</TH>
                 <TH>Base utilization</TH>
                 <TH>Scenario utilization</TH>
                 <TH>Delta</TH>
-              </TR>
+              </tr>
             </THead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody>
               {capacityDeltas.map((row, i) => (
                 <TR key={`${row.person_id}-${row.week_key}-${i}`}>
-                  <TD>{entityName(row.person_id, projects, people)}</TD>
+                  <TD className="font-medium text-k-text">{entityName(row.person_id, projects, people)}</TD>
                   <TD>{row.week_key}</TD>
                   <TD>
                     <Badge tone={heatTone(row.base_utilization)}>
@@ -108,7 +108,7 @@ export function DiffView({ diff, projects, people }: DiffViewProps) {
                       {formatPercent(row.scenario_utilization)}
                     </Badge>
                   </TD>
-                  <TD className={row.delta > 0 ? 'text-red-700' : 'text-emerald-700'}>
+                  <TD className={row.delta > 0 ? 'text-k-danger-text' : 'text-k-success-text'}>
                     {row.delta > 0 ? '+' : ''}
                     {formatPercent(row.delta)}
                   </TD>
@@ -121,27 +121,27 @@ export function DiffView({ diff, projects, people }: DiffViewProps) {
 
       {(conflictChanges.added.length > 0 || conflictChanges.removed.length > 0) && (
         <Card>
-          <h3 className="mb-3 text-sm font-semibold text-slate-900">Conflict changes</h3>
+          <h3 className="mb-3 text-sm font-semibold text-k-text">Conflict changes</h3>
 
           {conflictChanges.added.length > 0 && (
             <div className="mb-4">
-              <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-k-text-tertiary">
                 Conflicts added
               </h4>
               <ul className="space-y-2">
                 {conflictChanges.added.map((c, i) => (
                   <li
                     key={`added-${c.rule}-${i}`}
-                    className="flex items-center gap-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm"
+                    className="flex items-center gap-3 rounded-md border border-k-danger-border bg-k-danger-bg px-3 py-2 text-sm"
                   >
                     <Badge tone="danger">{c.rule}</Badge>
-                    <span className="text-slate-700">
+                    <span className="text-k-text-secondary">
                       {entityName(c.project_id ?? c.person_id ?? c.team_id ?? '', projects, people)}
                     </span>
-                    <span className="text-slate-500">
+                    <span className="text-k-text-muted">
                       {c.window_start} – {c.window_end}
                     </span>
-                    <span className="ml-auto text-xs text-slate-500">{c.severity}</span>
+                    <span className="ml-auto text-xs text-k-text-muted">{c.severity}</span>
                   </li>
                 ))}
               </ul>
@@ -150,23 +150,23 @@ export function DiffView({ diff, projects, people }: DiffViewProps) {
 
           {conflictChanges.removed.length > 0 && (
             <div>
-              <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-k-text-tertiary">
                 Conflicts removed
               </h4>
               <ul className="space-y-2">
                 {conflictChanges.removed.map((c, i) => (
                   <li
                     key={`removed-${c.rule}-${i}`}
-                    className="flex items-center gap-3 rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm"
+                    className="flex items-center gap-3 rounded-md border border-k-success-border bg-k-success-bg px-3 py-2 text-sm"
                   >
                     <Badge tone="success">{c.rule}</Badge>
-                    <span className="text-slate-700">
+                    <span className="text-k-text-secondary">
                       {entityName(c.project_id ?? c.person_id ?? c.team_id ?? '', projects, people)}
                     </span>
-                    <span className="text-slate-500">
+                    <span className="text-k-text-muted">
                       {c.window_start} – {c.window_end}
                     </span>
-                    <span className="ml-auto text-xs text-slate-500">{c.severity}</span>
+                    <span className="ml-auto text-xs text-k-text-muted">{c.severity}</span>
                   </li>
                 ))}
               </ul>
@@ -176,22 +176,22 @@ export function DiffView({ diff, projects, people }: DiffViewProps) {
       )}
 
       {feasibilityDeltas.length > 0 && (
-        <Card>
-          <h3 className="mb-3 text-sm font-semibold text-slate-900">Feasibility changes</h3>
+        <Card className="p-0 overflow-hidden">
+          <h3 className="px-5 py-3 text-sm font-semibold text-k-text">Feasibility changes</h3>
           <Table>
             <THead>
-              <TR>
+              <tr>
                 <TH>Project</TH>
                 <TH>Verdict before</TH>
                 <TH>Verdict after</TH>
                 <TH>Finish before</TH>
                 <TH>Finish after</TH>
-              </TR>
+              </tr>
             </THead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody>
               {feasibilityDeltas.map((row) => (
                 <TR key={row.project_id}>
-                  <TD>{entityName(row.project_id, projects, people)}</TD>
+                  <TD className="font-medium text-k-text">{entityName(row.project_id, projects, people)}</TD>
                   <TD>
                     <Badge tone={verdictTone(row.base.verdict)}>{row.base.verdict}</Badge>
                   </TD>

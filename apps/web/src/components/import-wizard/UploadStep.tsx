@@ -61,7 +61,7 @@ export function UploadStep({ onFileLoaded, onCancel }: UploadStepProps) {
 
   return (
     <Card>
-      <h2 className="mb-4 text-lg font-semibold text-slate-900">1. Upload spreadsheet</h2>
+      <h2 className="mb-4 text-base font-semibold text-k-text">1. Upload spreadsheet</h2>
 
       {error && (
         <div className="mb-4">
@@ -71,19 +71,19 @@ export function UploadStep({ onFileLoaded, onCancel }: UploadStepProps) {
 
       <div className="space-y-4">
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">File</label>
+          <label className="mb-1 block text-sm font-medium text-k-text-secondary">File</label>
           <Input
             type="file"
             accept=".xls,.xlsx,.csv"
             onChange={handleFileChange}
             disabled={loading}
           />
-          <p className="mt-1 text-xs text-slate-500">Supported: .xls, .xlsx, .csv</p>
+          <p className="mt-1 text-xs text-k-text-muted">Supported: .xls, .xlsx, .csv</p>
         </div>
 
         {workbook && (
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Sheet</label>
+            <label className="mb-1 block text-sm font-medium text-k-text-secondary">Sheet</label>
             <Select value={sheetName} onChange={(e) => setSheetName(e.target.value)}>
               {workbook.SheetNames.map((name) => (
                 <option key={name} value={name}>
@@ -95,7 +95,7 @@ export function UploadStep({ onFileLoaded, onCancel }: UploadStepProps) {
         )}
 
         {loading && (
-          <div className="flex items-center gap-2 text-sm text-slate-600">
+          <div className="flex items-center gap-2 text-sm text-k-text-secondary">
             <Spinner />
             Reading file...
           </div>

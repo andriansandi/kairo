@@ -67,13 +67,14 @@ function formatDate(value: string | null) {
   return value ?? '—';
 }
 
-function feasibilityBadgeTone(verdict: string | null): 'success' | 'warning' | 'danger' | 'neutral' {
+function feasibilityBadgeTone(verdict: string | null): 'success' | 'warning' | 'risk' | 'danger' | 'neutral' {
   switch (verdict) {
     case 'healthy':
       return 'success';
     case 'warning':
-    case 'at_risk':
       return 'warning';
+    case 'at_risk':
+      return 'risk';
     case 'critical':
       return 'danger';
     default:
@@ -130,9 +131,9 @@ function ProjectsPage() {
       />
 
       <Card className="mb-6">
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-4">
           <div className="min-w-[16rem] flex-1">
-            <label htmlFor="project-search" className="mb-1 block text-xs font-medium text-slate-600">
+            <label htmlFor="project-search" className="mb-1 block text-xs font-medium text-k-text-secondary">
               Search
             </label>
             <Input
@@ -143,7 +144,7 @@ function ProjectsPage() {
             />
           </div>
           <div className="w-48">
-            <label htmlFor="project-status" className="mb-1 block text-xs font-medium text-slate-600">
+            <label htmlFor="project-status" className="mb-1 block text-xs font-medium text-k-text-secondary">
               Status
             </label>
             <Select
@@ -171,7 +172,7 @@ function ProjectsPage() {
       {error ? (
         <ErrorState title="Failed to load projects" message={error.message} retry={refetch} />
       ) : isLoading ? (
-        <div className="flex items-center gap-3 py-8 text-slate-500">
+        <div className="flex items-center gap-3 py-8 text-k-text-secondary">
           <Spinner />
           <span>Loading projects…</span>
         </div>
@@ -181,7 +182,7 @@ function ProjectsPage() {
         <>
           <Table>
             <THead>
-              <TR>
+              <tr>
                 <TH>Code</TH>
                 <TH>Name</TH>
                 <TH>Status</TH>
@@ -189,16 +190,16 @@ function ProjectsPage() {
                 <TH>Priority</TH>
                 <TH>Deadline</TH>
                 <TH>JRs</TH>
-              </TR>
+              </tr>
             </THead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody>
               {data.items.map((p) => (
-                <TR key={p.id} className={projectId === p.id ? 'bg-slate-100' : undefined}>
+                <TR key={p.id} className={projectId === p.id ? 'bg-k-elevated' : undefined}>
                   <TD>
                     <Link
                       to="/projects/$projectId"
                       params={{ projectId: p.id }}
-                      className="font-medium text-slate-900 hover:underline"
+                      className="font-medium text-k-text hover:underline"
                     >
                       {p.code}
                     </Link>
@@ -281,7 +282,7 @@ function ProjectDetail() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-3 py-6 text-slate-500">
+      <div className="flex items-center gap-3 py-6 text-k-text-secondary">
         <Spinner />
         <span>Loading project…</span>
       </div>
@@ -318,16 +319,16 @@ function ProjectDetail() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-slate-900">{project.name}</h2>
+        <h2 className="text-base font-semibold text-k-text">{project.name}</h2>
         <Link
           to="/projects"
-          className="text-sm font-medium text-slate-600 hover:text-slate-900"
+          className="text-sm font-medium text-k-text-secondary hover:text-k-text"
         >
           Close
         </Link>
       </div>
 
-      <div className="border-b border-slate-200">
+      <div className="border-b border-k-border">
         <nav className="-mb-px flex gap-6">
           <TabButton active={tab === 'overview'} onClick={() => setTab('overview')}>
             Overview
@@ -343,11 +344,11 @@ function ProjectDetail() {
           <Card>
             <div className="mb-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
               <div>
-                <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Code</dt>
-                <dd className="mt-1 text-sm font-semibold text-slate-900">{project.code}</dd>
+                <dt className="text-xs font-medium uppercase tracking-wider text-k-text-tertiary">Code</dt>
+                <dd className="mt-1 text-sm font-semibold text-k-text">{project.code}</dd>
               </div>
               <div>
-                <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Status</dt>
+                <dt className="text-xs font-medium uppercase tracking-wider text-k-text-tertiary">Status</dt>
                 <dd className="mt-1">
                   <Badge tone={projectStatusTone(project.status)}>
                     {project.status.replace('_', ' ')}
@@ -355,20 +356,20 @@ function ProjectDetail() {
                 </dd>
               </div>
               <div>
-                <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Plane ID</dt>
-                <dd className="mt-1 text-sm text-slate-700">{project.plane_id ?? '—'}</dd>
+                <dt className="text-xs font-medium uppercase tracking-wider text-k-text-tertiary">Plane ID</dt>
+                <dd className="mt-1 text-sm text-k-text-secondary">{project.plane_id ?? '—'}</dd>
               </div>
               <div>
-                <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Updated</dt>
-                <dd className="mt-1 text-sm text-slate-700">
+                <dt className="text-xs font-medium uppercase tracking-wider text-k-text-tertiary">Updated</dt>
+                <dd className="mt-1 text-sm text-k-text-secondary">
                   {new Date(project.updated_at).toLocaleString()}
                 </dd>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 border-t border-slate-200 pt-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-4 border-t border-k-border pt-4 sm:grid-cols-2 lg:grid-cols-4">
               <div>
-                <label htmlFor="priority" className="mb-1 block text-xs font-medium text-slate-600">
+                <label htmlFor="priority" className="mb-1 block text-xs font-medium text-k-text-secondary">
                   Priority (1–5)
                 </label>
                 <Input
@@ -386,7 +387,7 @@ function ProjectDetail() {
                 />
               </div>
               <div>
-                <label htmlFor="deadline" className="mb-1 block text-xs font-medium text-slate-600">
+                <label htmlFor="deadline" className="mb-1 block text-xs font-medium text-k-text-secondary">
                   Deadline
                 </label>
                 <Input
@@ -399,7 +400,7 @@ function ProjectDetail() {
                 />
               </div>
               <div>
-                <label htmlFor="declared-start" className="mb-1 block text-xs font-medium text-slate-600">
+                <label htmlFor="declared-start" className="mb-1 block text-xs font-medium text-k-text-secondary">
                   Declared start
                 </label>
                 <Input
@@ -412,7 +413,7 @@ function ProjectDetail() {
                 />
               </div>
               <div>
-                <label htmlFor="declared-end" className="mb-1 block text-xs font-medium text-slate-600">
+                <label htmlFor="declared-end" className="mb-1 block text-xs font-medium text-k-text-secondary">
                   Declared end
                 </label>
                 <Input
@@ -431,32 +432,30 @@ function ProjectDetail() {
                 {update.isPending ? <Spinner className="mr-2 h-4 w-4" /> : null}
                 Save
               </Button>
-              {update.isError && (
-                <span className="text-sm text-red-700">{update.error.message}</span>
-              )}
-              {update.isSuccess && <span className="text-sm text-emerald-700">Saved</span>}
+              {update.isError && <span className="text-sm text-k-danger-text">{update.error.message}</span>}
+              {update.isSuccess && <span className="text-sm text-k-success-text">Saved</span>}
             </div>
           </Card>
 
           {phases.length > 0 && (
             <Card>
-              <h3 className="mb-3 text-sm font-semibold text-slate-900">Phases</h3>
+              <h3 className="mb-3 text-sm font-semibold text-k-text">Phases</h3>
               <Table>
                 <THead>
-                  <TR>
+                  <tr>
                     <TH>Sequence</TH>
                     <TH>Name</TH>
                     <TH>Status</TH>
                     <TH>Start</TH>
                     <TH>End</TH>
                     <TH>Effort (h)</TH>
-                  </TR>
+                  </tr>
                 </THead>
-                <tbody className="divide-y divide-slate-200">
+                <tbody>
                   {phases.map((phase) => (
                     <TR key={phase.id}>
                       <TD>{phase.sequence}</TD>
-                      <TD>{phase.name}</TD>
+                      <TD className="font-medium text-k-text">{phase.name}</TD>
                       <TD>
                         <Badge tone={phaseStatusTone(phase.status)}>
                           {phase.status.replace('_', ' ')}
@@ -474,14 +473,14 @@ function ProjectDetail() {
 
           {Object.keys(counts).length > 0 && (
             <Card>
-              <h3 className="mb-3 text-sm font-semibold text-slate-900">Counts</h3>
+              <h3 className="mb-3 text-sm font-semibold text-k-text">Counts</h3>
               <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 {Object.entries(counts).map(([key, value]) => (
                   <div key={key}>
-                    <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <dt className="text-xs font-medium uppercase tracking-wider text-k-text-tertiary">
                       {key.replace(/_/g, ' ')}
-                  </dt>
-                    <dd className="mt-1 text-sm font-semibold text-slate-900">{String(value)}</dd>
+                    </dt>
+                    <dd className="mt-1 text-sm font-semibold text-k-text">{String(value)}</dd>
                   </div>
                 ))}
               </dl>
@@ -507,10 +506,10 @@ function TabButton({
   return (
     <button
       onClick={onClick}
-      className={`border-b-2 px-1 py-2 text-sm font-medium transition ${
+      className={`border-b-2 px-1 py-2.5 text-sm font-medium transition-colors ${
         active
-          ? 'border-slate-900 text-slate-900'
-          : 'border-transparent text-slate-500 hover:text-slate-700'
+          ? 'border-k-text text-k-text'
+          : 'border-transparent text-k-text-secondary hover:text-k-text'
       }`}
     >
       {children}
@@ -535,7 +534,7 @@ function FeasibilitySection({ project }: { project: Project }) {
     <div className="space-y-6">
       <Card>
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-slate-900">Feasibility</h3>
+          <h3 className="text-base font-semibold text-k-text">Feasibility</h3>
           {feasibility && (
             <Badge tone={feasibilityBadgeTone(feasibility.verdict)}>
               {feasibilityLabel(feasibility.verdict)}
@@ -544,7 +543,7 @@ function FeasibilitySection({ project }: { project: Project }) {
         </div>
 
         {feasibilityLoading ? (
-          <div className="flex items-center gap-2 py-4 text-slate-500">
+          <div className="flex items-center gap-2 py-4 text-k-text-secondary">
             <Spinner />
             <span>Loading feasibility…</span>
           </div>
@@ -563,27 +562,27 @@ function FeasibilitySection({ project }: { project: Project }) {
 
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
               <div>
-                <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Computed start</dt>
-                <dd className="mt-1 text-sm font-semibold text-slate-900">{formatDate(feasibility.computed_start)}</dd>
+                <dt className="text-xs font-medium uppercase tracking-wider text-k-text-tertiary">Computed start</dt>
+                <dd className="mt-1 text-sm font-semibold text-k-text">{formatDate(feasibility.computed_start)}</dd>
               </div>
               <div>
-                <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Computed finish</dt>
-                <dd className="mt-1 text-sm font-semibold text-slate-900">{formatDate(feasibility.computed_finish)}</dd>
+                <dt className="text-xs font-medium uppercase tracking-wider text-k-text-tertiary">Computed finish</dt>
+                <dd className="mt-1 text-sm font-semibold text-k-text">{formatDate(feasibility.computed_finish)}</dd>
               </div>
               <div>
-                <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Slack days</dt>
-                <dd className="mt-1 text-sm font-semibold text-slate-900">{feasibility.slack_days}</dd>
+                <dt className="text-xs font-medium uppercase tracking-wider text-k-text-tertiary">Slack days</dt>
+                <dd className="mt-1 text-sm font-semibold text-k-text">{feasibility.slack_days}</dd>
               </div>
               <div>
-                <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Buffer days</dt>
-                <dd className="mt-1 text-sm font-semibold text-slate-900">{feasibility.buffer_days}</dd>
+                <dt className="text-xs font-medium uppercase tracking-wider text-k-text-tertiary">Buffer days</dt>
+                <dd className="mt-1 text-sm font-semibold text-k-text">{feasibility.buffer_days}</dd>
               </div>
             </div>
 
             {feasibility.drivers.length > 0 && (
               <div>
-                <h4 className="mb-2 text-sm font-semibold text-slate-900">Drivers</h4>
-                <ul className="list-disc space-y-1 pl-5 text-sm text-slate-700">
+                <h4 className="mb-2 text-sm font-semibold text-k-text">Drivers</h4>
+                <ul className="list-disc space-y-1 pl-5 text-sm text-k-text-secondary">
                   {feasibility.drivers.map((driver, i) => (
                     <li key={i}>{driver}</li>
                   ))}
@@ -593,18 +592,18 @@ function FeasibilitySection({ project }: { project: Project }) {
 
             {Object.keys(feasibility.per_phase_load).length > 0 && (
               <div>
-                <h4 className="mb-2 text-sm font-semibold text-slate-900">Per-phase load</h4>
+                <h4 className="mb-2 text-sm font-semibold text-k-text">Per-phase load</h4>
                 <Table>
                   <THead>
-                    <TR>
+                    <tr>
                       <TH>Phase</TH>
                       <TH>Load (h/wk)</TH>
-                    </TR>
+                    </tr>
                   </THead>
-                  <tbody className="divide-y divide-slate-200">
+                  <tbody>
                     {Object.entries(feasibility.per_phase_load).map(([phase, load]) => (
                       <TR key={phase}>
-                        <TD>{phase}</TD>
+                        <TD className="font-medium text-k-text">{phase}</TD>
                         <TD>{Number(load.toFixed(1))}</TD>
                       </TR>
                     ))}
@@ -618,7 +617,7 @@ function FeasibilitySection({ project }: { project: Project }) {
 
       <Card>
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-slate-900">Alternatives</h3>
+          <h3 className="text-base font-semibold text-k-text">Alternatives</h3>
           <Button
             onClick={() =>
               generate.mutate(undefined, {
@@ -638,12 +637,12 @@ function FeasibilitySection({ project }: { project: Project }) {
         </div>
 
         {generate.error && (
-          <div className="mb-4 rounded border border-red-200 bg-red-50 p-3">
-            <p className="text-sm text-red-700">{generate.error.message}</p>
+          <div className="mb-4 rounded-md border border-k-danger-border bg-k-danger-bg p-3">
+            <p className="text-sm text-k-danger-text">{generate.error.message}</p>
           </div>
         )}
 
-        <p className="mb-4 text-sm text-slate-600">
+        <p className="mb-4 text-sm text-k-text-secondary">
           Applying an alternative is a human decision — use the Scenarios page.
         </p>
 
@@ -654,19 +653,19 @@ function FeasibilitySection({ project }: { project: Project }) {
         ) : (
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {alternatives.map((alt) => (
-              <div key={alt.id} className="rounded border border-slate-200 p-4">
+              <div key={alt.id} className="rounded-lg border border-k-border bg-k-surface p-4">
                 <div className="mb-2 flex items-center justify-between">
-                  <h4 className="font-semibold text-slate-900">{strategyLabel(alt.strategy)}</h4>
+                  <h4 className="font-semibold text-k-text">{strategyLabel(alt.strategy)}</h4>
                   <Badge tone="neutral">{alt.id}</Badge>
                 </div>
-                <p className="mb-3 text-sm text-slate-700">{alt.description}</p>
+                <p className="mb-3 text-sm text-k-text-secondary">{alt.description}</p>
 
                 {alt.tradeoffs.length > 0 && (
                   <div className="mb-3 flex flex-wrap gap-2">
                     {alt.tradeoffs.map((tradeoff, i) => (
                       <span
                         key={i}
-                        className="inline-flex items-center rounded bg-slate-100 px-2 py-1 text-xs text-slate-700"
+                        className="inline-flex items-center rounded-md bg-k-elevated px-2 py-1 text-xs text-k-text-secondary ring-1 ring-inset ring-k-border"
                       >
                         {tradeoff}
                       </span>
@@ -676,8 +675,8 @@ function FeasibilitySection({ project }: { project: Project }) {
 
                 {alt.ops.length > 0 && (
                   <div>
-                    <h5 className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Changes</h5>
-                    <ul className="list-disc space-y-1 pl-5 text-sm text-slate-700">
+                    <h5 className="mb-1 text-xs font-semibold uppercase tracking-wider text-k-text-tertiary">Changes</h5>
+                    <ul className="list-disc space-y-1 pl-5 text-sm text-k-text-secondary">
                       {alt.ops.map((op, i) => (
                         <li key={i}>{opHumanLine(op)}</li>
                       ))}
@@ -705,10 +704,10 @@ function TimelineStrip({
   computedFinish: string;
 }) {
   const markers = [
-    { label: 'Declared start', date: declaredStart, color: 'bg-slate-500' },
-    { label: 'Declared end', date: declaredEnd, color: 'bg-slate-400' },
-    { label: 'Computed finish', date: computedFinish, color: 'bg-indigo-500' },
-    { label: 'Deadline', date: deadline, color: 'bg-rose-500' },
+    { label: 'Declared start', date: declaredStart, color: 'bg-k-text-muted' },
+    { label: 'Declared end', date: declaredEnd, color: 'bg-k-text-tertiary' },
+    { label: 'Computed finish', date: computedFinish, color: 'bg-blue-500' },
+    { label: 'Deadline', date: deadline, color: 'bg-k-heat-critical' },
   ].filter((m): m is { label: string; date: string; color: string } => !!m.date);
 
   const dates = markers.map((m) => new Date(m.date).getTime());
@@ -717,12 +716,12 @@ function TimelineStrip({
   const span = max - min || 1;
 
   if (markers.length === 0) {
-    return <p className="text-sm text-slate-500">No timeline dates available.</p>;
+    return <p className="text-sm text-k-text-muted">No timeline dates available.</p>;
   }
 
   return (
     <div className="relative h-20 w-full">
-      <div className="absolute top-1/2 left-0 right-0 h-0.5 -translate-y-1/2 bg-slate-300" />
+      <div className="absolute top-1/2 left-0 right-0 h-0.5 -translate-y-1/2 bg-k-border-strong" />
       {markers.map((m, i) => {
         const pos = ((new Date(m.date).getTime() - min) / span) * 100;
         return (
@@ -732,8 +731,8 @@ function TimelineStrip({
             style={{ left: `${pos}%` }}
           >
             <div className={`mx-auto h-3 w-3 rounded-full ${m.color}`} />
-            <div className="mt-1 text-center text-xs text-slate-600 whitespace-nowrap">{m.label}</div>
-            <div className="text-center text-[10px] text-slate-500">{m.date}</div>
+            <div className="mt-1 text-center text-xs text-k-text-secondary whitespace-nowrap">{m.label}</div>
+            <div className="text-center text-[10px] text-k-text-muted">{m.date}</div>
           </div>
         );
       })}

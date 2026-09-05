@@ -1,26 +1,37 @@
-import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TableHTMLAttributes, TdHTMLAttributes, TextareaHTMLAttributes, ThHTMLAttributes } from 'react';
+import type {
+  ButtonHTMLAttributes,
+  HTMLAttributes,
+  InputHTMLAttributes,
+  ReactNode,
+  SelectHTMLAttributes,
+  TableHTMLAttributes,
+  TdHTMLAttributes,
+  TextareaHTMLAttributes,
+  ThHTMLAttributes,
+} from 'react';
 
 type PageHeaderProps = {
   title: string;
   subtitle?: string;
   actions?: ReactNode;
+  className?: string;
 };
 
-export function PageHeader({ title, subtitle, actions }: PageHeaderProps) {
+export function PageHeader({ title, subtitle, actions, className = '' }: PageHeaderProps) {
   return (
-    <div className="mb-6 flex items-end justify-between">
+    <div className={`mb-6 flex items-end justify-between gap-4 ${className}`}>
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">{title}</h1>
-        {subtitle && <p className="mt-1 text-sm text-slate-600">{subtitle}</p>}
+        <h1 className="text-2xl font-semibold tracking-tight text-k-text">{title}</h1>
+        {subtitle && <p className="mt-1 text-sm text-k-text-secondary">{subtitle}</p>}
       </div>
-      {actions && <div className="flex items-center gap-2">{actions}</div>}
+      {actions && <div className="flex flex-shrink-0 items-center gap-2">{actions}</div>}
     </div>
   );
 }
 
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`rounded-lg border border-slate-200 bg-white p-6 shadow-sm ${className}`}>
+    <div className={`rounded-lg border border-k-border bg-k-surface p-5 ${className}`}>
       {children}
     </div>
   );
@@ -30,63 +41,57 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: 'primary' | 'secondary' | 'danger';
 };
 
+const buttonBase =
+  'inline-flex items-center justify-center rounded-md px-3 py-2 text-sm font-medium transition-colors duration-150 focus-visible:k-focus-ring disabled:pointer-events-none disabled:opacity-50';
+
 const buttonStyles: Record<NonNullable<ButtonProps['variant']>, string> = {
-  primary: 'bg-slate-900 text-white hover:bg-slate-800',
-  secondary: 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50',
-  danger: 'bg-red-600 text-white hover:bg-red-700',
+  primary:
+    'bg-k-text text-white hover:bg-slate-800 active:bg-slate-950 shadow-sm',
+  secondary:
+    'border border-k-border bg-k-surface text-k-text-secondary hover:bg-k-elevated hover:text-k-text active:bg-k-border',
+  danger:
+    'bg-k-danger-text text-white hover:bg-red-800 active:bg-red-950 shadow-sm',
 };
 
 export function Button({ variant = 'primary', className = '', ...props }: ButtonProps) {
-  return (
-    <button
-      className={`inline-flex items-center justify-center rounded px-4 py-2 text-sm font-medium transition disabled:opacity-50 ${buttonStyles[variant]} ${className}`}
-      {...props}
-    />
-  );
+  return <button className={`${buttonBase} ${buttonStyles[variant]} ${className}`} {...props} />;
 }
 
+const fieldBase =
+  'block w-full rounded-md border border-k-border bg-k-surface px-3 py-2 text-sm text-k-text placeholder:text-k-text-muted focus:border-k-border-strong focus:k-focus-ring disabled:opacity-60';
+
 export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
-  return (
-    <input
-      className="block w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none"
-      {...props}
-    />
-  );
+  return <input className={fieldBase} {...props} />;
 }
 
 export function Select(props: SelectHTMLAttributes<HTMLSelectElement>) {
-  return (
-    <select
-      className="block w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none"
-      {...props}
-    />
-  );
+  return <select className={fieldBase} {...props} />;
 }
 
 export function Textarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return (
-    <textarea
-      className="block w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none"
-      {...props}
-    />
-  );
+  return <textarea className={`${fieldBase} min-h-[5rem]`} {...props} />;
 }
 
-type BadgeProps = {
+export type BadgeProps = {
   children: ReactNode;
-  tone?: 'neutral' | 'success' | 'warning' | 'danger';
+  tone?: 'neutral' | 'success' | 'warning' | 'danger' | 'risk' | 'info';
+  className?: string;
 };
 
 const badgeStyles: Record<NonNullable<BadgeProps['tone']>, string> = {
-  neutral: 'bg-slate-100 text-slate-700',
-  success: 'bg-emerald-100 text-emerald-800',
-  warning: 'bg-amber-100 text-amber-800',
-  danger: 'bg-red-100 text-red-800',
+  neutral: 'bg-k-neutral-bg text-k-neutral-text ring-k-neutral-border',
+  success: 'bg-k-success-bg text-k-success-text ring-k-success-border',
+  warning: 'bg-k-warning-bg text-k-warning-text ring-k-warning-border',
+  risk: 'bg-k-risk-bg text-k-risk-text ring-k-risk-border',
+  danger: 'bg-k-danger-bg text-k-danger-text ring-k-danger-border',
+  info: 'bg-k-info-bg text-k-info-text ring-k-info-border',
 };
 
-export function Badge({ children, tone = 'neutral' }: BadgeProps) {
+export function Badge({ children, tone = 'neutral', className = '' }: BadgeProps) {
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${badgeStyles[tone]}`}>
+    <span
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${badgeStyles[tone]} ${className}`}
+    >
       {children}
     </span>
   );
@@ -95,7 +100,7 @@ export function Badge({ children, tone = 'neutral' }: BadgeProps) {
 export function Spinner({ className = '' }: { className?: string }) {
   return (
     <div
-      className={`h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-slate-900 ${className}`}
+      className={`h-4 w-4 animate-spin rounded-full border-[1.5px] border-k-border-strong border-t-k-text ${className}`}
       aria-label="Loading"
     />
   );
@@ -109,9 +114,9 @@ type ErrorStateProps = {
 
 export function ErrorState({ title = 'Error', message, retry }: ErrorStateProps) {
   return (
-    <div className="rounded-lg border border-red-200 bg-red-50 p-6">
-      <h3 className="text-sm font-semibold text-red-900">{title}</h3>
-      <p className="mt-1 text-sm text-red-700">{message}</p>
+    <div className="rounded-lg border border-k-danger-border bg-k-danger-bg p-5">
+      <h3 className="text-sm font-semibold text-k-danger-text">{title}</h3>
+      <p className="mt-1 text-sm text-k-danger-text/90">{message}</p>
       {retry && (
         <Button variant="danger" className="mt-4" onClick={retry}>
           Retry
@@ -128,38 +133,43 @@ type EmptyStateProps = {
 
 export function EmptyState({ title = 'Nothing here', message }: EmptyStateProps) {
   return (
-    <div className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center">
-      <p className="text-sm font-medium text-slate-900">{title}</p>
-      {message && <p className="mt-1 text-sm text-slate-500">{message}</p>}
+    <div className="rounded-lg border border-dashed border-k-border bg-k-surface px-6 py-8 text-center">
+      <p className="text-sm font-medium text-k-text">{title}</p>
+      {message && <p className="mt-1 text-sm text-k-text-secondary">{message}</p>}
     </div>
   );
 }
 
 export function Table(props: TableHTMLAttributes<HTMLTableElement>) {
   return (
-    <div className="overflow-x-auto rounded-lg border border-slate-200">
-      <table className="min-w-full divide-y divide-slate-200 text-sm" {...props} />
+    <div className="overflow-x-auto rounded-lg border border-k-border bg-k-surface">
+      <table className="w-full border-collapse text-sm" {...props} />
     </div>
   );
 }
 
 export function THead({ children }: { children: ReactNode }) {
-  return <thead className="bg-slate-50">{children}</thead>;
+  return <thead className="bg-k-elevated text-left">{children}</thead>;
 }
 
 export function TH(props: ThHTMLAttributes<HTMLTableCellElement>) {
   return (
     <th
-      className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
+      className="sticky top-0 z-10 border-b border-k-border bg-k-elevated px-3 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-k-text-tertiary"
       {...props}
     />
   );
 }
 
-export function TR(props: TdHTMLAttributes<HTMLTableRowElement>) {
-  return <tr className="even:bg-slate-50 hover:bg-slate-100" {...props} />;
+export function TR(props: HTMLAttributes<HTMLTableRowElement>) {
+  return (
+    <tr
+      className="transition-colors hover:bg-k-elevated/60 focus-within:bg-k-elevated/60"
+      {...props}
+    />
+  );
 }
 
 export function TD(props: TdHTMLAttributes<HTMLTableCellElement>) {
-  return <td className="px-4 py-3 text-slate-700" {...props} />;
+  return <td className="border-b border-k-border px-3 py-2 text-sm tabular-nums text-k-text-secondary" {...props} />;
 }

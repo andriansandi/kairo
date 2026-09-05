@@ -69,15 +69,12 @@ function WorkItemsPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Work / JRs"
-        subtitle="Plane-synced work items (job requests)"
-      />
+      <PageHeader title="Work / JRs" subtitle="Plane-synced work items (job requests)" />
 
       <Card className="mb-6">
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-4">
           <div className="min-w-[16rem] flex-1">
-            <label htmlFor="work-search" className="mb-1 block text-xs font-medium text-slate-600">
+            <label htmlFor="work-search" className="mb-1 block text-xs font-medium text-k-text-secondary">
               Search
             </label>
             <Input
@@ -90,7 +87,7 @@ function WorkItemsPage() {
             />
           </div>
           <div className="w-48">
-            <label htmlFor="work-status" className="mb-1 block text-xs font-medium text-slate-600">
+            <label htmlFor="work-status" className="mb-1 block text-xs font-medium text-k-text-secondary">
               Status
             </label>
             <Select
@@ -113,7 +110,7 @@ function WorkItemsPage() {
             </Select>
           </div>
           <div className="w-56">
-            <label htmlFor="work-project" className="mb-1 block text-xs font-medium text-slate-600">
+            <label htmlFor="work-project" className="mb-1 block text-xs font-medium text-k-text-secondary">
               Project
             </label>
             <Select
@@ -141,7 +138,7 @@ function WorkItemsPage() {
       {error ? (
         <ErrorState title="Failed to load work items" message={error.message} retry={refetch} />
       ) : isLoading ? (
-        <div className="flex items-center gap-3 py-8 text-slate-500">
+        <div className="flex items-center gap-3 py-8 text-k-text-secondary">
           <Spinner />
           <span>Loading work items…</span>
         </div>
@@ -151,7 +148,7 @@ function WorkItemsPage() {
         <>
           <Table>
             <THead>
-              <TR>
+              <tr>
                 <TH>Title</TH>
                 <TH>Project</TH>
                 <TH>Status</TH>
@@ -159,16 +156,16 @@ function WorkItemsPage() {
                 <TH>Due date</TH>
                 <TH>Estimate (h)</TH>
                 <TH>Assignees</TH>
-              </TR>
+              </tr>
             </THead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody>
               {data.items.map((item) => (
                 <TR
                   key={item.id}
-                  className={selectedId === item.id ? 'bg-slate-100' : undefined}
+                  className={selectedId === item.id ? 'bg-k-elevated' : undefined}
                   onClick={() => setSelectedId(item.id)}
                 >
-                  <TD className="max-w-xs truncate font-medium text-slate-900">{item.title}</TD>
+                  <TD className="max-w-xs truncate font-medium text-k-text">{item.title}</TD>
                   <TD>{item.project_name}</TD>
                   <TD>
                     <Badge tone={workItemStatusTone(item.status)}>
@@ -216,14 +213,14 @@ function WorkItemDetail({ id, onClose }: { id: string | null; onClose: () => voi
   return (
     <Card className="mt-6">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-slate-900">JR detail</h3>
+        <h3 className="text-base font-semibold text-k-text">JR detail</h3>
         <Button variant="secondary" onClick={onClose}>
           Close
         </Button>
       </div>
 
       {isLoading ? (
-        <div className="flex items-center gap-3 py-4 text-slate-500">
+        <div className="flex items-center gap-3 py-4 text-k-text-secondary">
           <Spinner />
           <span>Loading…</span>
         </div>
@@ -233,11 +230,11 @@ function WorkItemDetail({ id, onClose }: { id: string | null; onClose: () => voi
         <div className="space-y-6">
           <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             <div>
-              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Title</dt>
-              <dd className="mt-1 text-sm font-semibold text-slate-900">{data.title}</dd>
+              <dt className="text-xs font-medium uppercase tracking-wider text-k-text-tertiary">Title</dt>
+              <dd className="mt-1 text-sm font-semibold text-k-text">{data.title}</dd>
             </div>
             <div>
-              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Status</dt>
+              <dt className="text-xs font-medium uppercase tracking-wider text-k-text-tertiary">Status</dt>
               <dd className="mt-1">
                 <Badge tone={workItemStatusTone(data.status)}>
                   {data.status.replace('_', ' ')}
@@ -245,39 +242,39 @@ function WorkItemDetail({ id, onClose }: { id: string | null; onClose: () => voi
               </dd>
             </div>
             <div>
-              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Priority</dt>
-              <dd className="mt-1 text-sm font-semibold text-slate-900">{data.priority ?? '—'}</dd>
+              <dt className="text-xs font-medium uppercase tracking-wider text-k-text-tertiary">Priority</dt>
+              <dd className="mt-1 text-sm font-semibold text-k-text">{data.priority ?? '—'}</dd>
             </div>
             <div>
-              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Plane ID</dt>
-              <dd className="mt-1 text-sm text-slate-700">{data.plane_id}</dd>
+              <dt className="text-xs font-medium uppercase tracking-wider text-k-text-tertiary">Plane ID</dt>
+              <dd className="mt-1 text-sm text-k-text-secondary">{data.plane_id}</dd>
             </div>
             <div>
-              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Start date</dt>
-              <dd className="mt-1 text-sm text-slate-700">{formatDate(data.start_date)}</dd>
+              <dt className="text-xs font-medium uppercase tracking-wider text-k-text-tertiary">Start date</dt>
+              <dd className="mt-1 text-sm text-k-text-secondary">{formatDate(data.start_date)}</dd>
             </div>
             <div>
-              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Due date</dt>
-              <dd className="mt-1 text-sm text-slate-700">{formatDate(data.due_date)}</dd>
+              <dt className="text-xs font-medium uppercase tracking-wider text-k-text-tertiary">Due date</dt>
+              <dd className="mt-1 text-sm text-k-text-secondary">{formatDate(data.due_date)}</dd>
             </div>
             <div>
-              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Estimate</dt>
-              <dd className="mt-1 text-sm text-slate-700">
+              <dt className="text-xs font-medium uppercase tracking-wider text-k-text-tertiary">Estimate</dt>
+              <dd className="mt-1 text-sm text-k-text-secondary">
                 {data.estimate_normalized_hours !== null
                   ? `${data.estimate_normalized_hours} h`
                   : data.estimate_raw ?? '—'}
               </dd>
             </div>
             <div>
-              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Cycle</dt>
-              <dd className="mt-1 text-sm text-slate-700">{data.cycle ?? '—'}</dd>
+              <dt className="text-xs font-medium uppercase tracking-wider text-k-text-tertiary">Cycle</dt>
+              <dd className="mt-1 text-sm text-k-text-secondary">{data.cycle ?? '—'}</dd>
             </div>
             <div>
-              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Assignees</dt>
-              <dd className="mt-1 text-sm text-slate-700">{data.assignee_ids.length}</dd>
+              <dt className="text-xs font-medium uppercase tracking-wider text-k-text-tertiary">Assignees</dt>
+              <dd className="mt-1 text-sm text-k-text-secondary">{data.assignee_ids.length}</dd>
             </div>
             <div className="col-span-2">
-              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Labels</dt>
+              <dt className="text-xs font-medium uppercase tracking-wider text-k-text-tertiary">Labels</dt>
               <dd className="mt-1 flex flex-wrap gap-1">
                 {data.labels.length > 0 ? (
                   data.labels.map((label) => (
@@ -286,17 +283,17 @@ function WorkItemDetail({ id, onClose }: { id: string | null; onClose: () => voi
                     </Badge>
                   ))
                 ) : (
-                  <span className="text-sm text-slate-700">—</span>
+                  <span className="text-sm text-k-text-secondary">—</span>
                 )}
               </dd>
             </div>
           </dl>
 
-          <div className="border-t border-slate-200 pt-4">
+          <div className="border-t border-k-border pt-4">
             <SkillRequirementsCard workItemId={id} />
           </div>
 
-          <div className="border-t border-slate-200 pt-4">
+          <div className="border-t border-k-border pt-4">
             <MatchesCard workItemId={id} />
           </div>
         </div>
@@ -346,16 +343,14 @@ function SkillRequirementsCard({ workItemId }: { workItemId: string }) {
   const removeRow = (index: number) => setDraft((prev) => prev.filter((_, i) => i !== index));
 
   const updateRow = (index: number, patch: Partial<SkillRequirementInput>) => {
-    setDraft((prev) =>
-      prev.map((r, i) => (i === index ? { ...r, ...patch } : r)),
-    );
+    setDraft((prev) => prev.map((r, i) => (i === index ? { ...r, ...patch } : r)));
   };
 
   const save = () => update.mutate(draft);
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-3 py-4 text-slate-500">
+      <div className="flex items-center gap-3 py-4 text-k-text-secondary">
         <Spinner />
         <span>Loading skill requirements…</span>
       </div>
@@ -367,19 +362,16 @@ function SkillRequirementsCard({ workItemId }: { workItemId: string }) {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-base font-semibold text-slate-900">Skill requirements</h3>
+      <h3 className="text-sm font-semibold text-k-text">Skill requirements</h3>
 
       {draft.length === 0 ? (
-        <EmptyState
-          title="No requirements"
-          message="Add the skills this JR needs so KAIRO can match people."
-        />
+        <EmptyState title="No requirements" message="Add the skills this JR needs so KAIRO can match people." />
       ) : (
         <div className="space-y-2">
           {draft.map((req, index) => (
             <div key={index} className="flex flex-wrap items-end gap-2">
               <div className="min-w-[12rem] flex-1">
-                <label className="mb-1 block text-xs font-medium text-slate-600">Skill</label>
+                <label className="mb-1 block text-xs font-medium text-k-text-secondary">Skill</label>
                 <Select
                   value={req.skill_id}
                   onChange={(e) => updateRow(index, { skill_id: e.target.value })}
@@ -395,7 +387,7 @@ function SkillRequirementsCard({ workItemId }: { workItemId: string }) {
                 </Select>
               </div>
               <div className="w-40">
-                <label className="mb-1 block text-xs font-medium text-slate-600">Level</label>
+                <label className="mb-1 block text-xs font-medium text-k-text-secondary">Level</label>
                 <Select
                   value={String(req.min_level)}
                   onChange={(e) =>
@@ -410,7 +402,7 @@ function SkillRequirementsCard({ workItemId }: { workItemId: string }) {
                 </Select>
               </div>
               <div className="w-40">
-                <label className="mb-1 block text-xs font-medium text-slate-600">Weight</label>
+                <label className="mb-1 block text-xs font-medium text-k-text-secondary">Weight</label>
                 <Select
                   value={req.weight}
                   onChange={(e) => updateRow(index, { weight: e.target.value as SkillWeight })}
@@ -456,7 +448,7 @@ function MatchesCard({ workItemId }: { workItemId: string }) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-3 py-4 text-slate-500">
+      <div className="flex items-center gap-3 py-4 text-k-text-secondary">
         <Spinner />
         <span>Loading matches…</span>
       </div>
@@ -469,10 +461,7 @@ function MatchesCard({ workItemId }: { workItemId: string }) {
 
   if (data.requirements.length === 0) {
     return (
-      <EmptyState
-        title="Best matches"
-        message="Add skill requirements to compute matches."
-      />
+      <EmptyState title="Best matches" message="Add skill requirements to compute matches." />
     );
   }
 
@@ -481,10 +470,10 @@ function MatchesCard({ workItemId }: { workItemId: string }) {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-base font-semibold text-slate-900">Best matches</h3>
+      <h3 className="text-sm font-semibold text-k-text">Best matches</h3>
 
       {unfiltered.length === 0 ? (
-        <p className="text-sm text-amber-700">
+        <p className="text-sm text-k-warning-text">
           No candidate clears the hard gates — nearest misses are shown below.
         </p>
       ) : null}
@@ -492,15 +481,15 @@ function MatchesCard({ workItemId }: { workItemId: string }) {
       {unfiltered.length > 0 && (
         <Table>
           <THead>
-            <TR>
+            <tr>
               <TH>Person</TH>
               <TH>Score</TH>
               <TH>Breakdown</TH>
               <TH>Free hours</TH>
               <TH>Gaps</TH>
-            </TR>
+            </tr>
           </THead>
-          <tbody className="divide-y divide-slate-200">
+          <tbody>
             {unfiltered.map((match) => (
               <MatchRow key={match.person_id} match={match} skillName={skillName} />
             ))}
@@ -509,7 +498,7 @@ function MatchesCard({ workItemId }: { workItemId: string }) {
       )}
 
       {filtered.length > 0 && (
-        <div className="rounded-lg border border-slate-200 bg-white p-4">
+        <div className="rounded-lg border border-k-border bg-k-surface p-4">
           <Button
             type="button"
             variant="secondary"
@@ -519,13 +508,13 @@ function MatchesCard({ workItemId }: { workItemId: string }) {
             {filtered.length === 1 ? '' : 's'})
           </Button>
           {showFiltered && (
-            <div className="mt-3 divide-y divide-slate-100">
+            <div className="mt-3 divide-y divide-k-border">
               {filtered.map((match) => (
                 <div key={match.person_id} className="py-3">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-sm font-medium text-slate-900">{match.person_name}</p>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-sm font-medium text-k-text">{match.person_name}</p>
+                      <p className="text-xs text-k-text-muted">
                         Score {match.score} · free {match.free_hours_in_window}h
                       </p>
                     </div>
@@ -560,20 +549,20 @@ function MatchRow({
 }) {
   return (
     <TR>
-      <TD className="font-medium text-slate-900">{match.person_name}</TD>
-      <TD className="text-base font-bold text-slate-900">{match.score}</TD>
+      <TD className="font-medium text-k-text">{match.person_name}</TD>
+      <TD className="text-base font-bold text-k-text">{match.score}</TD>
       <TD className="min-w-[16rem]">
         <div className="flex flex-wrap gap-3">
-          <ScoreBar label="Skill" value={match.components.skill} color="bg-blue-600" />
-          <ScoreBar label="Avail" value={match.components.availability} color="bg-emerald-600" />
-          <ScoreBar label="Ctx" value={match.components.context} color="bg-amber-500" />
-          <ScoreBar label="Role" value={match.components.role} color="bg-purple-600" />
+          <ScoreBar label="Skill" value={match.components.skill} color="bg-blue-500" />
+          <ScoreBar label="Avail" value={match.components.availability} color="bg-k-heat-low" />
+          <ScoreBar label="Ctx" value={match.components.context} color="bg-k-heat-med" />
+          <ScoreBar label="Role" value={match.components.role} color="bg-purple-500" />
         </div>
       </TD>
       <TD>{match.free_hours_in_window}</TD>
       <TD>
         {match.gaps.length === 0 ? (
-          <span className="text-sm text-slate-400">—</span>
+          <span className="text-sm text-k-text-muted">—</span>
         ) : (
           <div className="flex flex-wrap gap-1">
             {match.gaps.map((g, i) => (
@@ -600,11 +589,11 @@ function ScoreBar({
   const width = Math.min(100, Math.max(0, value));
   return (
     <div className="w-20">
-      <div className="flex justify-between text-[10px] font-medium uppercase tracking-wide text-slate-500">
+      <div className="flex justify-between text-[10px] font-medium uppercase tracking-wider text-k-text-tertiary">
         <span>{label}</span>
         <span>{Math.round(value)}</span>
       </div>
-      <div className="mt-1 h-1.5 overflow-hidden rounded bg-slate-200">
+      <div className="mt-1 h-1.5 overflow-hidden rounded bg-k-border">
         <div className={`h-1.5 rounded ${color}`} style={{ width: `${width}%` }} />
       </div>
     </div>
