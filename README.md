@@ -27,10 +27,8 @@ packages/
 
 - `pnpm install` — install all workspace packages
 - `pnpm typecheck` / `pnpm test` — full workspace
-- Local dev (two terminals):
-  - `pnpm --filter @kairo/worker db:migrate:local` (first time only)
-  - `pnpm --filter @kairo/worker dev` — API on http://localhost:8787
-  - `pnpm --filter @kairo/web dev` — SPA on http://localhost:5173 (proxies `/api` to :8787)
+- Local dev: `pnpm dev` — starts BOTH the API (http://localhost:8787) and the web app (http://localhost:5173, proxies `/api` to :8787) with prefixed, streamed output. Stop with Ctrl+C.
+  - First time only: `pnpm --filter @kairo/worker db:migrate:local` (create local D1 tables) and copy `apps/worker/.dev.vars.example` → `.dev.vars` with your Plane credentials.
 - `pnpm --filter @kairo/web build` — production build (CI stages it into `apps/worker/public/`)
 
 ## Deployment — Cloudflare Workers Builds (Git integration)
