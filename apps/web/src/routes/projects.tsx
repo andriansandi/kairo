@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
-import { createRoute, Link, Outlet, useParams } from '@tanstack/react-router';
+import { createRoute, Link, Outlet, useNavigate, useParams } from '@tanstack/react-router';
+import { MoreHorizontal } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/shadcn/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/shadcn/tooltip';
 import { toast } from 'sonner';
 import type { Project, ProjectPhase, ProjectStatus, ScenarioOp } from '@kairo/types';
 import { rootRoute } from './layout';
@@ -18,6 +26,7 @@ import {
   TH,
   THead,
   TR,
+  TruncatedText,
 } from '../components/ui';
 import {
   useProject,
@@ -191,6 +200,7 @@ function ProjectsPage() {
                 <TH>Priority</TH>
                 <TH>Deadline</TH>
                 <TH>JRs</TH>
+                <TH className="text-right">Actions</TH>
               </tr>
             </THead>
             <tbody>
@@ -205,7 +215,9 @@ function ProjectsPage() {
                       {p.code}
                     </Link>
                   </TD>
-                  <TD>{p.name}</TD>
+                  <TD className="max-w-sm">
+                    <TruncatedText text={p.name} className="max-w-sm" />
+                  </TD>
                   <TD>
                     <Badge tone={projectStatusTone(p.status)}>{p.status.replace('_', ' ')}</Badge>
                   </TD>
@@ -217,6 +229,9 @@ function ProjectsPage() {
                   <TD>{p.priority ?? '—'}</TD>
                   <TD>{formatDate(p.deadline)}</TD>
                   <TD>{p.work_item_count}</TD>
+                  <TD className="text-right">
+                    <ProjectRowActions projectId={p.id} />
+                  </TD>
                 </TR>
               ))}
             </tbody>
@@ -744,6 +759,31 @@ function TimelineStrip({
         );
       })}
     </div>
+  );
+}
+
+function ProjectRowActions({ projectId }: { projectId: string }) {
+  const navigate = useNavigate();
+  return (
+    <DropdownMenu>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <DropdownMenuTrigger asChild>
+            <Button variant="secondary" className="px-1.5 py-1" aria-label="Project actions">
+              <MoreHorizontal className="size-4" />
+            </Button>
+          </DropdownMenuTrigger>
+        </TooltipTrigger>
+        <TooltipContent>Actions</TooltipContent>
+      </Tooltip>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem
+          onClick={() => navigate({ to: '/projects/$projectId', params: { projectId } })}
+        >
+          Open detail
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 

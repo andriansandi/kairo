@@ -25,6 +25,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/shadcn/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/shadcn/tooltip';
+import { MoreHorizontal } from 'lucide-react';
 import type { Person, PersonSkill, Allocation, PtoEntry, ProficiencyLevel } from '@kairo/types';
 import type { PersonDetail as PersonDetailData } from '../api/people';
 import {
@@ -139,7 +141,7 @@ function People() {
               <tbody>
                 {isLoading ? (
                   <TR>
-                    <TD colSpan={7}>
+                    <TD colSpan={8}>
                       <div className="flex items-center gap-2 py-4">
                         <Spinner />
                         <span className="text-k-text-secondary">Loading people...</span>
@@ -148,7 +150,7 @@ function People() {
                   </TR>
                 ) : !data || data.items.length === 0 ? (
                   <TR>
-                    <TD colSpan={7}>
+                    <TD colSpan={8}>
                       <EmptyState title="No people found" message="Try adjusting filters or add a person." />
                     </TD>
                   </TR>
@@ -212,11 +214,16 @@ function PersonRowActions({ person }: { person: { id: string; name: string } }) 
   const navigate = useNavigate();
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="secondary" className="px-2 py-1 text-xs">
-          Actions
-        </Button>
-      </DropdownMenuTrigger>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <DropdownMenuTrigger asChild>
+            <Button variant="secondary" className="px-1.5 py-1" aria-label="Person actions">
+              <MoreHorizontal className="size-4" />
+            </Button>
+          </DropdownMenuTrigger>
+        </TooltipTrigger>
+        <TooltipContent>Actions</TooltipContent>
+      </Tooltip>
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={() => navigate({ to: '/people/$personId', params: { personId: person.id } })}>
           Edit

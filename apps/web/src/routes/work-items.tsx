@@ -18,6 +18,7 @@ import {
   TH,
   THead,
   TR,
+  TruncatedText,
 } from '../components/ui';
 import { useProjects } from '../api/projects';
 import { useSkills } from '../api/skills';
@@ -166,7 +167,9 @@ function WorkItemsPage() {
                   className={selectedId === item.id ? 'bg-k-elevated' : undefined}
                   onClick={() => setSelectedId(item.id)}
                 >
-                  <TD className="max-w-xs truncate font-medium text-k-text">{item.title}</TD>
+                  <TD className="max-w-xs">
+                    <TruncatedText text={item.title} className="max-w-xs font-medium text-k-text" />
+                  </TD>
                   <TD>{item.project_name}</TD>
                   <TD>
                     <Badge tone={workItemStatusTone(item.status)}>

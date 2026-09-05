@@ -15,6 +15,7 @@ import {
   TH,
   TR,
   TD,
+  TruncatedText,
 } from '../components/ui';
 import {
   useConflicts,
@@ -188,13 +189,15 @@ export default function Conflicts() {
                         <TD>
                           <Badge tone="neutral">{c.rule}</Badge>
                         </TD>
-                        <TD className="font-medium text-k-text">{entityName(c)}</TD>
+                        <TD className="max-w-xs">
+                          <TruncatedText text={entityName(c)} className="max-w-xs font-medium text-k-text" />
+                        </TD>
                         <TD className="whitespace-nowrap">{c.window_start} → {c.window_end}</TD>
                         <TD>
                           <Badge tone={severityBadgeTone(c.severity)}>{severityLabel(c.severity)}</Badge>
                         </TD>
                         <TD>
-                          <p className="max-w-xl truncate text-k-text-secondary">{c.explanation}</p>
+                          <TruncatedText text={c.explanation} className="max-w-xl text-k-text-secondary" />
                         </TD>
                       </TR>
                     ))}

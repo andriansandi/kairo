@@ -9,6 +9,7 @@ import type {
   TextareaHTMLAttributes,
   ThHTMLAttributes,
 } from 'react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/shadcn/tooltip';
 
 type PageHeaderProps = {
   title: string;
@@ -137,6 +138,17 @@ export function EmptyState({ title = 'Nothing here', message }: EmptyStateProps)
       <p className="text-sm font-medium text-k-text">{title}</p>
       {message && <p className="mt-1 text-sm text-k-text-secondary">{message}</p>}
     </div>
+  );
+}
+
+export function TruncatedText({ text, className = '' }: { text: string; className?: string }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className={`block truncate ${className}`}>{text}</span>
+      </TooltipTrigger>
+      <TooltipContent>{text}</TooltipContent>
+    </Tooltip>
   );
 }
 
