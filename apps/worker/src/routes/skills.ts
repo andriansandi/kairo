@@ -138,3 +138,14 @@ skillsRouter.patch("/:id", async (c) => {
   const row = await first<Record<string, unknown>>(db, "SELECT * FROM skill WHERE id = ?", id);
   return c.json(mapSkillRow(row!));
 });
+
+skillsRouter.delete("/:id", async (c) => {
+  const db = c.get("db") as D1Database;
+  const id = c.req.param("id");
+
+  const existing = await first<{ id: string }>(db, "SELECT id FROM skill WHERE id = ?", id);
+  if (!existing) notFound("Skill not found");
+
+  await run(db, "DELETE FROM skill WHERE id = ?", id);
+  return c.body(null, 204);
+});
