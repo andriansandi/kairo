@@ -8,7 +8,7 @@ import type {
   PtoEntry,
   Team,
 } from '@kairo/types';
-import { apiFetch } from './client';
+import { apiFetch, ApiError } from './client';
 
 export type PersonWithRefs = Person & {
   role_name: string;
@@ -150,6 +150,41 @@ export function useRemovePto() {
         method: 'DELETE',
       }),
     onSuccess: (_, { personId }) => {
+      queryClient.invalidateQueries({ queryKey: ['person', personId] });
+    },
+  });
+}
+
+async function apiDelete(path: string): Promise<void> {
+  let res: Response;
+  try {
+    res = await fetch(path, { method: 'DELETE' });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Network request failed';
+    throw new ApiError(message, { status: 0, code: 'network_error' });
+  }
+
+  if (!res.ok) {
+    let body: { error?: { code: string; message?: string; details?: unknown } } | undefined;
+    try {
+      body = await res.json();
+    } catch {
+      body = undefined;
+    }
+    throw new ApiError(body?.error?.message ?? res.statusText, {
+      status: res.status,
+      code: body?.error?.code ?? 'api_error',
+      details: body?.error?.details,
+    });
+  }
+}
+
+export function useDeletePerson() {
+  const queryClient = useQueryClient();
+  return useMutation<unknown, Error, string>({
+    mutationFn: (personId) => apiDelete(`/api/v1/people/${personId}`),
+    onSuccess: (_, personId) => {
+      queryClient.invalidateQueries({ queryKey: ['people'] });
       queryClient.invalidateQueries({ queryKey: ['person', personId] });
     },
   });

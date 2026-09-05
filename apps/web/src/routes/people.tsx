@@ -1,4 +1,4 @@
-import { createRoute, Link, Outlet, useParams } from '@tanstack/react-router';
+import { createRoute, Link, Outlet, useNavigate, useParams } from '@tanstack/react-router';
 import { rootRoute } from './layout';
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -27,6 +27,7 @@ import {
   useUpdatePersonSkills,
   useAddPto,
   useRemovePto,
+  useDeletePerson,
   type CreatePersonBody,
   type PersonSkillInput,
 } from '../api/people';
@@ -126,12 +127,13 @@ function People() {
                   <TH>Seniority</TH>
                   <TH>Teams</TH>
                   <TH>Status</TH>
+                  <TH className="text-right">Actions</TH>
                 </tr>
               </THead>
               <tbody className="divide-y divide-slate-200">
                 {isLoading ? (
                   <TR>
-                    <TD colSpan={6}>
+                    <TD colSpan={7}>
                       <div className="flex items-center gap-2 py-4">
                         <Spinner />
                         <span className="text-slate-500">Loading people...</span>
@@ -140,7 +142,7 @@ function People() {
                   </TR>
                 ) : !data || data.items.length === 0 ? (
                   <TR>
-                    <TD colSpan={6}>
+                    <TD colSpan={7}>
                       <EmptyState title="No people found" message="Try adjusting filters or add a person." />
                     </TD>
                   </TR>
@@ -164,6 +166,9 @@ function People() {
                         <Badge tone={person.active ? 'success' : 'neutral'}>
                           {person.active ? 'Active' : 'Inactive'}
                         </Badge>
+                      </TD>
+                      <TD className="text-right">
+                        <DeletePersonButton person={person} />
                       </TD>
                     </TR>
                   ))
@@ -298,6 +303,44 @@ function AddPersonForm() {
   );
 }
 
+function DeletePersonButton({
+  person,
+  onDeleted,
+  size = 'small',
+}: {
+  person: { id: string; name: string };
+  onDeleted?: () => void;
+  size?: 'small' | 'default';
+}) {
+  const remove = useDeletePerson();
+
+  const handleClick = () => {
+    if (
+      window.confirm(
+        `Delete ${person.name}? This permanently removes their skills, allocations, and PTO entries.`,
+      )
+    ) {
+      remove.mutate(person.id, { onSuccess: onDeleted });
+    }
+  };
+
+  return (
+    <div className="inline-flex flex-col items-end gap-1">
+      <Button
+        variant="danger"
+        onClick={handleClick}
+        disabled={remove.isPending}
+        className={size === 'small' ? 'px-2 py-1 text-xs' : ''}
+      >
+        {remove.isPending ? 'Deleting...' : 'Delete'}
+      </Button>
+      {remove.error && (
+        <span className="max-w-[12rem] text-xs text-red-600">{remove.error.message}</span>
+      )}
+    </div>
+  );
+}
+
 function PersonDetail() {
   const params = useParams({ strict: false });
   const personId = params.personId ?? null;
@@ -338,6 +381,7 @@ function PersonDetail() {
 }
 
 function ProfileCard({ person, teams }: { person: Person; teams: PersonDetailData['teams'] }) {
+  const navigate = useNavigate();
   const { data: roles } = useRoles();
   const update = useUpdatePerson();
   const [form, setForm] = useState<Partial<CreatePersonBody>>({});
@@ -363,9 +407,16 @@ function ProfileCard({ person, teams }: { person: Person; teams: PersonDetailDat
     <Card>
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-slate-900">Profile</h2>
-        <Badge tone={person.active ? 'success' : 'neutral'}>
-          {person.active ? 'Active' : 'Inactive'}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge tone={person.active ? 'success' : 'neutral'}>
+            {person.active ? 'Active' : 'Inactive'}
+          </Badge>
+          <DeletePersonButton
+            person={person}
+            size="default"
+            onDeleted={() => navigate({ to: '/people' })}
+          />
+        </div>
       </div>
       <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div>

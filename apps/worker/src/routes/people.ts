@@ -379,6 +379,21 @@ peopleRouter.delete("/:id/pto/:ptoId", async (c) => {
   return c.body(null, 204);
 });
 
+peopleRouter.delete("/:id", async (c) => {
+  const db = c.get("db") as D1Database;
+  const id = c.req.param("id");
+
+  const existing = await first<{ id: string }>(
+    db,
+    "SELECT id FROM person WHERE id = ?",
+    id,
+  );
+  if (!existing) notFound("Person not found");
+
+  await run(db, "DELETE FROM person WHERE id = ?", id);
+  return c.body(null, 204);
+});
+
 const PersonCapacityQuerySchema = z.object({
   from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
