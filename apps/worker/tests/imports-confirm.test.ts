@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import type { Env } from "../src/env";
 import { createApp } from "../src/index";
+import { authCookie, isUsersQuery, TEST_USER_ROW } from "./helpers/auth";
 
 function makeR2(): R2Bucket {
   return {
@@ -23,7 +24,10 @@ function makeDb() {
       sql,
       params,
       all: vi.fn(async () => ({ results: [] })),
-      first: vi.fn(async () => undefined),
+      first: vi.fn(async () => {
+        if (isUsersQuery(sql)) return TEST_USER_ROW;
+        return undefined;
+      }),
       run: vi.fn(async () => ({ success: true })),
     };
     statements.push(stmt);
@@ -55,6 +59,7 @@ function buildEnv(db: D1Database, r2?: R2Bucket): Env {
     IMPORTS: r2 ?? (makeR2() as unknown as R2Bucket),
     ENV: "dev",
     VERSION: "0.0.0-test",
+    AUTH_SECRET: "test-secret",
   };
 }
 
@@ -68,7 +73,10 @@ async function confirmImport(
   return app.fetch(
     new Request(`http://example.com/api/v1/imports/${importId}/confirm`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(await authCookie()),
+      },
       body: JSON.stringify(body),
     }),
   );
@@ -106,6 +114,7 @@ describe("POST /api/v1/imports/:id/confirm", () => {
             return { results: [] };
           }),
           first: vi.fn(async () => {
+            if (isUsersQuery(sql)) return TEST_USER_ROW;
             if (sql.toLowerCase().includes("timeline_import")) {
               return { id: params[0], status: "draft" };
             }
@@ -159,12 +168,13 @@ describe("POST /api/v1/imports/:id/confirm", () => {
     (db.prepare as ReturnType<typeof vi.fn>).mockImplementation((sql: string) => ({
       bind: vi.fn((...params: unknown[]) => ({
         all: vi.fn(async () => ({ results: [] })),
-        first: vi.fn(async () => {
-          if (sql.toLowerCase().includes("timeline_import")) {
-            return { id: params[0], status: "confirmed" };
-          }
-          return undefined;
-        }),
+          first: vi.fn(async () => {
+            if (isUsersQuery(sql)) return TEST_USER_ROW;
+            if (sql.toLowerCase().includes("timeline_import")) {
+              return { id: params[0], status: "confirmed" };
+            }
+            return undefined;
+          }),
         run: vi.fn(async () => ({ success: true })),
       })),
     }));
@@ -202,6 +212,7 @@ describe("POST /api/v1/imports/:id/confirm", () => {
           return { results: [] };
         }),
         first: vi.fn(async () => {
+          if (isUsersQuery(sql)) return TEST_USER_ROW;
           if (sql.toLowerCase().includes("timeline_import")) {
             return { id: params[0], status: "draft" };
           }

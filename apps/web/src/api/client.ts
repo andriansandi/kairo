@@ -34,6 +34,14 @@ export async function apiFetch<T>(
     } catch {
       body = undefined;
     }
+    if (
+      res.status === 401 &&
+      !path.startsWith('/api/v1/auth/login') &&
+      typeof window !== 'undefined' &&
+      window.location.pathname !== '/login'
+    ) {
+      window.location.assign('/login');
+    }
     throw new ApiError(body?.error?.message ?? res.statusText, {
       status: res.status,
       code: body?.error?.code ?? "api_error",

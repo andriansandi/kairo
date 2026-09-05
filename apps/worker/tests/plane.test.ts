@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import type { Env } from "../src/env";
 import { createApp } from "../src/index";
+import { authCookie, isUsersQuery, TEST_USER_ROW } from "./helpers/auth";
 
 function buildDb(): D1Database & {
   _enqueueFirst: (rows: unknown[]) => void;
@@ -10,11 +11,12 @@ function buildDb(): D1Database & {
   const allQueue: Array<{ rows: unknown[] }> = [];
 
   return {
-    prepare: () => ({
+    prepare: (sql: string) => ({
       bind: function (...params: unknown[]) {
         void params;
         return {
           first: async <T>() => {
+            if (isUsersQuery(sql)) return TEST_USER_ROW as T;
             const next = firstQueue.shift();
             return next ? (next.rows[0] as T | undefined) : undefined;
           },
@@ -44,6 +46,7 @@ function buildEnv(envOverrides: Partial<Env> = {}): Env {
     IMPORTS: {} as unknown as R2Bucket,
     ENV: "dev",
     VERSION: "0.0.0-test",
+    AUTH_SECRET: "test-secret",
     ...envOverrides,
   };
 }
@@ -54,7 +57,10 @@ describe("Plane routes", () => {
     const res = await app.fetch(
       new Request("http://example.com/api/v1/plane/sync", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(await authCookie()),
+        },
         body: JSON.stringify({ type: "full" }),
       }),
     );
@@ -81,7 +87,9 @@ describe("Plane routes", () => {
 
     const app = createApp(buildEnv({ DB: db }));
     const res = await app.fetch(
-      new Request("http://example.com/api/v1/plane/sync-runs"),
+      new Request("http://example.com/api/v1/plane/sync-runs", {
+        headers: await authCookie(),
+      }),
     );
     expect(res.status).toBe(200);
     const body = (await res.json()) as {
@@ -98,7 +106,9 @@ describe("Plane routes", () => {
 
     const app = createApp(buildEnv({ DB: db }));
     const res = await app.fetch(
-      new Request("http://example.com/api/v1/plane/mapping-queue"),
+      new Request("http://example.com/api/v1/plane/mapping-queue", {
+        headers: await authCookie(),
+      }),
     );
     expect(res.status).toBe(200);
     const body = (await res.json()) as { items: Array<{ id: string }> };

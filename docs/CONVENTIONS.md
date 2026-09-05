@@ -76,6 +76,7 @@ Only the owning lane edits a file. `apps/worker/src/index.ts` and `apps/web/src/
 | `allocations.ts` | T-api | Allocations CRUD |
 | `dependencies.ts` | T-api | Dependencies |
 | `plane.ts` | P-api | Plane sync |
+| `auth.ts` | Auth (closed 2026-09-05) | Login/logout/me/password change |
 | `projects.ts` | P-api | Plane-synced project reads |
 | `work-items.ts` | P-api | Work item (JR) reads |
 | `imports.ts` | X-api | XLS import |
@@ -96,6 +97,7 @@ Only the owning lane edits a file. `apps/worker/src/index.ts` and `apps/web/src/
 | `0001_init.sql`, `0002_add_timestamps.sql` | Orchestrator | Schema + timestamps |
 | `0003_*.sql` | P-api | Plane member table |
 | `0004_*.sql` | X-api | Timeline import rows |
+| `0006_users.sql` | Auth (closed 2026-09-05) | users table + default admin (username/password auth) |
 
 ### Critical rule — `updated_at`
 
@@ -140,6 +142,7 @@ Lane smoke ports: W = 8793. E and U run no dev servers.
 | `settings/teams.tsx` | T-ui | Team settings |
 | `settings/sync.tsx` | P-ui | Plane sync settings + runs |
 | `settings/imports.tsx` | X-ui | Import templates + queue |
+| `login.tsx` | Auth (closed 2026-09-05) | Login page (public route) |
 
 ## Snapshot endpoints
 

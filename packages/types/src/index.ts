@@ -580,6 +580,16 @@ export const HealthResponseSchema = z.object({
 export type HealthResponse = z.infer<typeof HealthResponseSchema>;
 
 // ----------------------------------------------------------------------------
+// Auth (username/password users table; supersedes blueprint §13 Access plan)
+// ----------------------------------------------------------------------------
+
+export const AuthUserSchema = z.object({
+  id: z.string(),
+  username: z.string(),
+});
+export type AuthUser = z.infer<typeof AuthUserSchema>;
+
+// ----------------------------------------------------------------------------
 // Aggregated snapshot input
 // ----------------------------------------------------------------------------
 

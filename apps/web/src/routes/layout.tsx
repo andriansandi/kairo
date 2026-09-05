@@ -1,6 +1,14 @@
-import { createRootRoute, Link, Outlet } from '@tanstack/react-router';
+import {
+  createRootRoute,
+  Link,
+  Outlet,
+  redirect,
+  useRouterState,
+} from '@tanstack/react-router';
 import { Toaster } from '@/components/shadcn/sonner';
 import { TooltipProvider } from '@/components/shadcn/tooltip';
+import { UserMenu } from '@/components/user-menu';
+import { useMe } from '@/api/auth';
 
 type ModuleDef = {
   label: string;
@@ -48,6 +56,20 @@ const groups: GroupDef[] = [
 const settings: ModuleDef = { label: 'Settings', path: '/settings' };
 
 function RootLayout() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { data: user } = useMe();
+
+  if (pathname === '/login') {
+    return (
+      <TooltipProvider>
+        <div className="min-h-screen bg-k-base text-k-text">
+          <Outlet />
+        </div>
+        <Toaster position="bottom-right" richColors closeButton />
+      </TooltipProvider>
+    );
+  }
+
   return (
     <TooltipProvider>
       <div className="flex h-screen bg-k-base text-k-text">
@@ -83,6 +105,7 @@ function RootLayout() {
                   </NavLink>
                 </li>
               </ul>
+              {user ? <UserMenu user={user} /> : null}
             </div>
           </nav>
         </aside>
@@ -119,5 +142,10 @@ function NavLink({
 }
 
 export const rootRoute = createRootRoute({
+  beforeLoad: async ({ location }) => {
+    if (location.pathname === '/login') return;
+    const res = await fetch('/api/v1/auth/me');
+    if (!res.ok) throw redirect({ to: '/login' });
+  },
   component: RootLayout,
 });

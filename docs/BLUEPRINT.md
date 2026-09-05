@@ -517,7 +517,7 @@ Phases are value-ordered; each is deployable and demoable. **MVP boundary: end o
 
 **Deterministic components (the non-negotiable list):** calendar math, capacity-engine, conflict-engine, matching-engine, planning-engine, snapshot builder, diff computation. All pure TypeScript packages with **no Workers/Node/browser-specific imports** — runnable in the Worker (authoritative), in tests (CI), and optionally in the browser (scenario preview). The `ai` package sits above them and is the *only* thing that talks to AI Gateway.
 
-**Auth:** Cloudflare Access in front of the Worker (SSO, zero auth code in MVP). Worker middleware validates the Access JWT, maps identity → person by email, enforces admin/planner/viewer from DB. The boundary is one middleware — a real auth system can replace it later without touching handlers.
+**Auth:** Cloudflare Access in front of the Worker (SSO, zero auth code in MVP). Worker middleware validates the Access JWT, maps identity → person by email, enforces admin/planner/viewer from DB. The boundary is one middleware — a real auth system can replace it later without touching handlers. *(2026-09-05 update, user-approved deviation: replaced the Access plan with simple username/password auth — `users` table, PBKDF2 hashes, HMAC-signed session cookie, `apps/worker/src/middleware/auth.ts` at the same middleware boundary. Cloudflare Access can still be layered in front later.)*
 
 **Cloudflare limits & mitigations**
 

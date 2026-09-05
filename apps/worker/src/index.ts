@@ -1,8 +1,9 @@
 import { Hono } from "hono";
 import type { Env } from "./env";
-import { validateAccessJwt } from "./middleware/access";
+import { requireAuth } from "./middleware/auth";
 import { HTTPException } from "./http";
 import { healthzRouter } from "./routes/healthz";
+import { authRouter } from "./routes/auth";
 import { peopleRouter } from "./routes/people";
 import { teamsRouter } from "./routes/teams";
 import { rolesRouter } from "./routes/roles";
@@ -31,9 +32,10 @@ export function createApp(env: Env): Hono {
     await next();
   });
 
-  app.use("/api/*", validateAccessJwt);
+  app.use("/api/*", requireAuth);
 
   app.route("/api/v1/healthz", healthzRouter);
+  app.route("/api/v1/auth", authRouter);
   app.route("/api/v1/people", peopleRouter);
   app.route("/api/v1/teams", teamsRouter);
   app.route("/api/v1/roles", rolesRouter);

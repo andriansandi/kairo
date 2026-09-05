@@ -18,6 +18,7 @@ function buildEnv(shouldThrow = false): Env {
     IMPORTS: {} as unknown as R2Bucket,
     ENV: "dev",
     VERSION: "0.0.0.0-test",
+    AUTH_SECRET: "test-secret",
   };
 }
 

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import type { Env } from "../src/env";
 import { createApp } from "../src/index";
+import { authCookie, isUsersQuery, TEST_USER_ROW } from "./helpers/auth";
 
 const EMPTY_HASH = "ae53892917be70ed1a8b85d13da83a0126e3d6add85737ee09a51af8becbdc1f";
 
@@ -100,6 +101,7 @@ function makeDb(seed: {
         const value = settings[key];
         return value ? { key, value, updated_at: "2026-09-05T10:00:00.000Z" } : undefined;
       }
+      if (isUsersQuery(sql)) return TEST_USER_ROW;
       return undefined;
     }),
     run: vi.fn(async () => ({ success: true })),
@@ -119,6 +121,7 @@ function buildEnv(db: D1Database): Env {
     IMPORTS: {} as unknown as R2Bucket,
     ENV: "dev",
     VERSION: "0.0.0-test",
+    AUTH_SECRET: "test-secret",
   };
 }
 
@@ -127,7 +130,10 @@ async function ask(db: D1Database, question: string) {
   return app.fetch(
     new Request("http://example.com/api/v1/ask", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(await authCookie()),
+      },
       body: JSON.stringify({ question }),
     }),
   );

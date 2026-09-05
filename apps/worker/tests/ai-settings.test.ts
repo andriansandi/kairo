@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import type { Env } from "../src/env";
 import { createApp } from "../src/index";
+import { authCookie, isUsersQuery, TEST_USER_ROW } from "./helpers/auth";
 
 interface Statement {
   sql: string;
@@ -34,6 +35,7 @@ function makeDb(initialSettings: Record<string, string> = {}) {
         return { results: [] };
       }),
       first: vi.fn(async () => {
+        if (isUsersQuery(sql)) return TEST_USER_ROW;
         if (lower.includes("app_setting")) {
           if (lower.includes("where") && lower.includes("key")) {
             const key = params[0] as string;
@@ -73,12 +75,17 @@ function buildEnv(db: D1Database): Env {
     IMPORTS: {} as unknown as R2Bucket,
     ENV: "dev",
     VERSION: "0.0.0-test",
+    AUTH_SECRET: "test-secret",
   };
 }
 
 async function request(path: string, init: RequestInit, db: D1Database) {
   const app = createApp(buildEnv(db));
-  return app.fetch(new Request(`http://example.com/api/v1/${path}`, init));
+  const headers = new Headers(init.headers);
+  headers.set("Cookie", (await authCookie()).Cookie);
+  return app.fetch(
+    new Request(`http://example.com/api/v1/${path}`, { ...init, headers }),
+  );
 }
 
 describe("Settings", () => {

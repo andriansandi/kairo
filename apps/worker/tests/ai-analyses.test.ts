@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import type { Env } from "../src/env";
 import { createApp } from "../src/index";
+import { authCookie, isUsersQuery, TEST_USER_ROW } from "./helpers/auth";
 
 const EMPTY_HASH = "ae53892917be70ed1a8b85d13da83a0126e3d6add85737ee09a51af8becbdc1f";
 
@@ -97,6 +98,7 @@ function makeDb(seed: {
       if (info?.type === "analysisById") {
         return analyses.find((a) => a.id === params[0]) ?? undefined;
       }
+      if (isUsersQuery(sql)) return TEST_USER_ROW;
       return undefined;
     }),
     run: vi.fn(async () => {
@@ -137,6 +139,7 @@ function buildEnv(db: D1Database): Env {
     IMPORTS: {} as unknown as R2Bucket,
     ENV: "dev",
     VERSION: "0.0.0-test",
+    AUTH_SECRET: "test-secret",
   };
 }
 
@@ -145,7 +148,10 @@ async function createAnalysis(db: D1Database, body: Record<string, unknown>) {
   return app.fetch(
     new Request("http://example.com/api/v1/analyses", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(await authCookie()),
+      },
       body: JSON.stringify(body),
     }),
   );
@@ -215,6 +221,7 @@ describe("POST /api/v1/analyses", () => {
     const res = await app.fetch(
       new Request(
         "http://example.com/api/v1/analyses?subject_type=project&subject_id=p1",
+        { headers: await authCookie() },
       ),
     );
     expect(res.status).toBe(200);
@@ -242,7 +249,9 @@ describe("POST /api/v1/analyses", () => {
 
     const app = createApp(buildEnv(db));
     const res = await app.fetch(
-      new Request("http://example.com/api/v1/analyses/a2"),
+      new Request("http://example.com/api/v1/analyses/a2", {
+        headers: await authCookie(),
+      }),
     );
     expect(res.status).toBe(200);
     const body = (await res.json()) as { analysis: Record<string, unknown> };

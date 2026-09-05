@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import type { Env } from "../src/env";
 import { createApp } from "../src/index";
+import { authCookie, isUsersQuery, TEST_USER_ROW } from "./helpers/auth";
 
 function makeR2(): R2Bucket {
   return {
@@ -22,7 +23,10 @@ function makeDb() {
     statements.push({ sql, params });
     return {
       all: vi.fn(async () => ({ results: [] })),
-      first: vi.fn(async () => undefined),
+      first: vi.fn(async () => {
+        if (isUsersQuery(sql)) return TEST_USER_ROW;
+        return undefined;
+      }),
       run: vi.fn(async () => ({ success: true })),
     };
   };
@@ -52,6 +56,7 @@ function buildEnv(db: D1Database, r2?: R2Bucket): Env {
     IMPORTS: r2 ?? (makeR2() as unknown as R2Bucket),
     ENV: "dev",
     VERSION: "0.0.0-test",
+    AUTH_SECRET: "test-secret",
   };
 }
 
@@ -68,6 +73,7 @@ async function postImport(
   form.append("rows", JSON.stringify(rows));
   return app.fetch(new Request("http://example.com/api/v1/imports", {
     method: "POST",
+    headers: await authCookie(),
     body: form,
   }));
 }
@@ -142,7 +148,10 @@ describe("POST /api/v1/imports", () => {
     const res = await app.fetch(
       new Request("http://example.com/api/v1/imports", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(await authCookie()),
+        },
         body: JSON.stringify({ rows: [] }),
       }),
     );
@@ -168,14 +177,21 @@ describe("GET /api/v1/imports", () => {
             },
           ],
         })),
-        first: vi.fn(async () => undefined),
+        first: vi.fn(async () => {
+          if (isUsersQuery(sql)) return TEST_USER_ROW;
+          return undefined;
+        }),
         run: vi.fn(async () => ({ success: true })),
       })),
     }));
 
     const env = buildEnv(db);
     const app = createApp(env);
-    const res = await app.fetch(new Request("http://example.com/api/v1/imports"));
+    const res = await app.fetch(
+      new Request("http://example.com/api/v1/imports", {
+        headers: await authCookie(),
+      }),
+    );
     expect(res.status).toBe(200);
     const body = (await res.json()) as Record<string, any>;
     expect(body.items).toHaveLength(1);
@@ -192,6 +208,7 @@ describe("DELETE /api/v1/imports/:id", () => {
       bind: vi.fn((...params: unknown[]) => ({
         all: vi.fn(async () => ({ results: [] })),
         first: vi.fn(async () => {
+          if (isUsersQuery(sql)) return TEST_USER_ROW;
           if (sql.toLowerCase().includes("timeline_import")) {
             return {
               id: params[0],
@@ -210,6 +227,7 @@ describe("DELETE /api/v1/imports/:id", () => {
     const res = await app.fetch(
       new Request("http://example.com/api/v1/imports/imp-1", {
         method: "DELETE",
+        headers: await authCookie(),
       }),
     );
     expect(res.status).toBe(204);

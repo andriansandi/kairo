@@ -1,5 +1,6 @@
 import { createRouter } from '@tanstack/react-router';
 import { rootRoute } from './routes/layout';
+import { loginRoute } from './routes/login';
 import { dashboardRoute } from './routes/dashboard';
 import { projectsRoute } from './routes/projects';
 import { workItemsRoute } from './routes/work-items';
@@ -16,6 +17,7 @@ import { settingsSyncRoute } from './routes/settings/sync';
 import { settingsImportsRoute } from './routes/settings/imports';
 
 const routeTree = rootRoute.addChildren([
+  loginRoute,
   dashboardRoute,
   projectsRoute,
   workItemsRoute,
