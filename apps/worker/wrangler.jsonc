@@ -1,0 +1,28 @@
+{
+  "name": "kairo-worker",
+  // Explicit account: this machine has two Cloudflare accounts; KAIRO lives in "andriansandi".
+  "account_id": "84ec71abec453c29acea6e5d8474d48e",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-09-01",
+  "assets": {
+    "directory": "./public"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "kairo",
+      "database_id": "b7e76156-95cb-4391-8094-849f268c95b7",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "IMPORTS",
+      "bucket_name": "kairo-imports"
+    }
+  ],
+  "vars": {
+    "ENV": "dev",
+    "VERSION": "0.0.0"
+  }
+}
